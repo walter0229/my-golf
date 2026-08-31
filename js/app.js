@@ -1,0 +1,244 @@
+/* 앱 셸: 해시 라우터 + 하단 탭 + 홈 화면 */
+(function (g) {
+  'use strict';
+
+  var App = {
+    views: {},     // name -> function(params) -> {title, sub, body, actions}
+    root: null,
+    current: null
+  };
+
+  // ---------- 라우팅 ----------
+  function parseHash() {
+    var h = (location.hash || '#/home').replace(/^#\/?/, '');
+    var parts = h.split('/').filter(Boolean);
+    return { name: parts[0] || 'home', params: parts.slice(1) };
+  }
+
+  App.go = function (path) {
+    if (path.charAt(0) !== '#') path = '#/' + path.replace(/^\/?/, '');
+    if (location.hash === path) render();
+    else location.hash = path;
+  };
+  App.back = function () {
+    if (history.length > 1) history.back();
+    else App.go('home');
+  };
+
+  function render() {
+    var r = parseHash();
+    var view = App.views[r.name] || App.views.home;
+    App.current = r;
+    var out;
+    try {
+      out = view(r.params);
+    } catch (e) {
+      console.error(e);
+      out = { title: '오류', body: U.el('div', { class: 'empty' }, ['화면을 그리는 중 문제가 발생했습니다: ' + e.message]) };
+    }
+
+    App.root.innerHTML = '';
+
+    var bar = U.el('div', { class: 'appbar' });
+    if (out.back) bar.appendChild(U.el('button', { class: 'icon', onclick: function () { App.back(); }, 'aria-label': '뒤로' }, '‹'));
+    var titleBox = U.el('div', { class: 'grow' });
+    titleBox.appendChild(U.el('h1', {}, [out.title || '골프 스코어', out.sub ? U.el('span', { class: 'sub', text: out.sub }) : null]));
+    bar.appendChild(titleBox);
+    (out.actions || []).forEach(function (a) { bar.appendChild(a); });
+    App.root.appendChild(bar);
+
+    var wrap = U.el('div', { class: out.noWrap ? '' : 'wrap' });
+    wrap.appendChild(out.body);
+    App.root.appendChild(wrap);
+
+    App.root.appendChild(tabbar(r.name));
+    window.scrollTo(0, out.keepScroll ? window.scrollY : 0);
+  }
+  App.render = render;
+
+  var TABS = [
+    { id: 'home', ic: '⛳', label: '홈', match: ['home'] },
+    { id: 'new', ic: '➕', label: '라운드', match: ['new', 'play', 'round'] },
+    { id: 'stats', ic: '\u{1F4CA}', label: '통계', match: ['stats'] },
+    { id: 'settings', ic: '⚙', label: '설정', match: ['settings', 'clubs', 'courses', 'course', 'sheets'] }
+  ];
+
+  function tabbar(cur) {
+    var bar = U.el('nav', { class: 'tabbar' });
+    TABS.forEach(function (t) {
+      var on = t.match.indexOf(cur) >= 0;
+      var a = U.el('a', { href: '#/' + t.id, class: on ? 'on' : '' }, [
+        U.el('span', { class: 'ic', text: t.ic }),
+        t.label
+      ]);
+      bar.appendChild(a);
+    });
+    return bar;
+  }
+
+  // ---------- 공용 컴포넌트 ----------
+  App.tile = function (value, key, sub, cls) {
+    return U.el('div', { class: 'tile' }, [
+      U.el('div', { class: 'v ' + (cls || ''), text: value === null || value === undefined ? '-' : String(value) }),
+      U.el('div', { class: 'k', text: key }),
+      sub ? U.el('div', { class: 'sub', text: sub }) : null
+    ]);
+  };
+
+  App.empty = function (icon, text, btnLabel, onClick) {
+    return U.el('div', { class: 'empty' }, [
+      U.el('div', { class: 'ic', text: icon }),
+      U.el('div', { text: text }),
+      btnLabel ? U.el('div', { class: 'mt16' }, [U.el('button', { class: 'primary', onclick: onClick }, btnLabel)]) : null
+    ]);
+  };
+
+  App.modal = function (title, contentEl, footerEl) {
+    var bg = U.el('div', { class: 'modal-bg' });
+    var box = U.el('div', { class: 'modal' }, [U.el('h3', { text: title }), contentEl, footerEl || null]);
+    bg.appendChild(box);
+    bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
+    function close() { if (bg.parentNode) document.body.removeChild(bg); }
+    document.body.appendChild(bg);
+    return { el: bg, close: close };
+  };
+
+  App.kindBadge = function (kind) {
+    return U.el('span', { class: 'badge ' + kind, text: kind === 'screen' ? '스크린' : '필드' });
+  };
+
+  // 코스 거리가 추정값인지 표시
+  App.estBadge = function (course) {
+    if (!course || course.verified) return null;
+    return U.el('span', { class: 'badge warn', text: '거리 미확인' });
+  };
+
+  // ---------- 홈 ----------
+  App.views.home = function () {
+    var st = Store.get();
+    var body = U.el('div');
+    var active = Store.activeRound();
+
+    // 진행 중인 라운드
+    if (active) {
+      var t = Store.totals(active);
+      var played = t.holesPlayed;
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '진행 중' }),
+        U.el('div', {
+          class: 'card click', onclick: function () {
+            var next = 0;
+            for (var i = 0; i < active.holes.length; i++) { if (!active.holes[i].score) { next = i; break; } }
+            App.go('play/' + active.id + '/' + next);
+          }
+        }, [
+          U.el('div', { class: 'row between' }, [
+            U.el('div', { class: 'grow' }, [
+              U.el('div', { class: 'row', style: 'gap:6px' }, [
+                App.kindBadge(active.kind),
+                U.el('span', { class: 'badge live', text: '진행 중' })
+              ]),
+              U.el('div', { class: 'mt8', style: 'font-weight:700;font-size:16px' , text: active.courseName }),
+              U.el('div', { class: 'muted sm', text: active.nineNames.join(' + ') + ' · ' + U.fmtDate(active.date) })
+            ]),
+            U.el('div', { class: 'right center' }, [
+              U.el('div', { style: 'font-size:26px;font-weight:800', text: played ? String(t.strokes) : '-' }),
+              U.el('div', { class: 'tiny', text: played + '/18홀' })
+            ])
+          ]),
+          U.el('div', { class: 'mt12' }, [U.el('button', { class: 'primary full' }, '이어서 기록하기')])
+        ])
+      ]));
+    }
+
+    // 요약
+    var all = st.rounds;
+    if (!all.length) {
+      body.appendChild(App.empty('⛳', '아직 기록이 없습니다.\n첫 라운드를 시작해 보세요.', '새 라운드 시작', function () { App.go('new'); }));
+      var setupCard = U.el('div', { class: 'card mt16 click', onclick: function () { App.go('clubs'); } }, [
+        U.el('div', { style: 'font-weight:600', text: '먼저 내 클럽 거리를 입력하세요' }),
+        U.el('div', { class: 'muted sm mt8', text: '클럽별 거리를 넣어야 홀마다 공략법(어떤 클럽으로 어디까지)을 계산해 드릴 수 있습니다.' })
+      ]);
+      body.appendChild(setupCard);
+      return { title: '골프 스코어 관리', body: body };
+    }
+
+    var sAll = Stats.summary(all);
+    var sField = Stats.summary(all.filter(function (r) { return r.kind === 'field'; }));
+    var sScreen = Stats.summary(all.filter(function (r) { return r.kind === 'screen'; }));
+
+    body.appendChild(U.el('div', { class: 'section' }, [
+      U.el('h2', { text: '전체 요약' }),
+      U.el('div', { class: 'tiles' }, [
+        App.tile(sAll.rounds, '라운드'),
+        App.tile(sAll.avg18 === null ? '-' : Math.round(sAll.avg18), '평균 (18홀)'),
+        App.tile(sAll.best18 === null ? '-' : sAll.best18, '베스트'),
+        App.tile(sAll.puttsPer18 === null ? '-' : U.round1(sAll.puttsPer18), '평균 퍼팅')
+      ])
+    ]));
+
+    var kindRow = U.el('div', { class: 'row', style: 'gap:8px' });
+    [['필드', sField, 'field'], ['스크린', sScreen, 'screen']].forEach(function (x) {
+      kindRow.appendChild(U.el('div', { class: 'card grow tight center' }, [
+        U.el('span', { class: 'badge ' + x[2], text: x[0] }),
+        U.el('div', { style: 'font-size:22px;font-weight:700;margin-top:6px', text: x[1].avg18 === null ? '-' : String(Math.round(x[1].avg18)) }),
+        U.el('div', { class: 'tiny', text: x[1].rounds + '라운드 · 평균 타수' })
+      ]));
+    });
+    body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '필드 / 스크린' }), kindRow]));
+
+    // 최근 라운드
+    var recent = Store.rounds().slice(0, 6);
+    var list = U.el('div', { class: 'list' });
+    recent.forEach(function (r) {
+      var t = Store.totals(r);
+      list.appendChild(U.el('div', {
+        class: 'item', onclick: function () { App.go('round/' + r.id); }
+      }, [
+        U.el('div', { class: 'main' }, [
+          U.el('div', { class: 'title nowrap', text: r.courseName }),
+          U.el('div', { class: 'desc' }, [
+            U.fmtDate(r.date) + ' · ' + r.nineNames.join('+') + ' · ',
+            U.el('span', { class: 'badge ' + r.kind, text: r.kind === 'screen' ? '스크린' : '필드' }),
+            r.done ? null : U.el('span', { class: 'badge live', style: 'margin-left:4px', text: '미완료' })
+          ])
+        ]),
+        U.el('div', { class: 'right' }, [
+          U.el('div', { class: 'big', text: t.holesPlayed ? String(t.strokes) : '-' }),
+          U.el('div', { class: 'tiny', text: t.holesPlayed ? U.sign(t.toPar) + ' · ' + t.putts + '퍼트' : '기록 없음' })
+        ])
+      ]));
+    });
+    body.appendChild(U.el('div', { class: 'section' }, [
+      U.el('div', { class: 'row between' }, [
+        U.el('h2', { class: 'grow', text: '최근 라운드' }),
+        U.el('button', { class: 'sm ghost', onclick: function () { App.go('stats'); } }, '전체 보기')
+      ]),
+      list
+    ]));
+
+    body.appendChild(U.el('button', {
+      class: 'primary full mt8', onclick: function () { App.go('new'); }
+    }, '새 라운드 시작'));
+
+    return { title: '골프 스코어 관리', sub: st.settings.playerName || null, body: body };
+  };
+
+  // ---------- 시작 ----------
+  function boot() {
+    App.root = U.$('#app');
+    Store.init();
+    window.addEventListener('hashchange', render);
+    render();
+
+    // 서비스워커 (http/https 에서만 동작)
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      navigator.serviceWorker.register('sw.js').catch(function (e) { console.log('SW 등록 생략:', e.message); });
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  g.App = App;
+})(window);

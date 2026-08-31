@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0f1613">
+<meta name="description" content="필드와 스크린골프 스코어를 나눠서 기록하고, 홀별 클럽·퍼팅을 관리하며, 내 클럽 거리 기반 공략법을 계산해 주는 오프라인 앱">
+<title>골프 스코어 관리</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="골프 스코어">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app"></div>
+
+<noscript>
+  <div style="padding:24px;color:#e8f0ec">이 앱을 사용하려면 자바스크립트를 켜주세요.</div>
+</noscript>
+
+<!-- 순서 중요: util → 데이터 → 저장소 → 계산 → 앱 셸 → 각 화면 -->
+<script src="js/util.js"></script>
+<script src="js/courses.js"></script>
+<script src="js/store.js"></script>
+<script src="js/strategy.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/app.js"></script>
+<script src="js/view-round.js"></script>
+<script src="js/view-stats.js"></script>
+<script src="js/view-settings.js"></script>
+<script src="js/sheets.js"></script>
+</body>
+</html>

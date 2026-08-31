@@ -1,0 +1,16 @@
+{
+  "name": "골프 스코어 관리",
+  "short_name": "골프스코어",
+  "description": "필드/스크린 골프 스코어, 클럽, 퍼팅 기록과 홀별 공략법",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1613",
+  "theme_color": "#0f1613",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

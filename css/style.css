@@ -1,0 +1,332 @@
+/* 골프 스코어 관리 - 스타일
+   모바일 우선. 필드에서 장갑 낀 손으로도 눌리도록 터치 영역을 크게 잡았다. */
+
+:root {
+  --bg: #0f1613;
+  --bg2: #17211d;
+  --card: #1c2823;
+  --card2: #23312b;
+  --line: #2d3d36;
+  --fg: #e8f0ec;
+  --fg2: #9db0a7;
+  --fg3: #6b8177;
+  --green: #3ddc84;
+  --green-d: #1f7a4a;
+  --accent: #ffd166;
+  --red: #ff6b6b;
+  --blue: #5aa9e6;
+  --radius: 14px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  overscroll-behavior-y: contain;
+}
+
+body { padding-bottom: calc(72px + var(--safe-b)); }
+
+/* ---------- 헤더 ---------- */
+.appbar {
+  position: sticky; top: 0; z-index: 40;
+  background: linear-gradient(180deg, #16221d 0%, #16221df2 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.appbar h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: -0.3px; flex: 1; }
+.appbar .sub { font-size: 12px; color: var(--fg2); font-weight: 400; display: block; margin-top: 2px; }
+.appbar button.icon {
+  background: none; border: none; color: var(--fg); font-size: 22px; padding: 4px 8px; cursor: pointer;
+}
+
+/* ---------- 레이아웃 ---------- */
+.wrap { padding: 16px; max-width: 720px; margin: 0 auto; }
+.section { margin-bottom: 22px; }
+.section > h2 {
+  font-size: 13px; text-transform: none; color: var(--fg2);
+  margin: 0 0 8px 2px; font-weight: 600; letter-spacing: 0.2px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.card.tight { padding: 10px 12px; }
+.card.click { cursor: pointer; transition: background .12s; }
+.card.click:active { background: var(--card2); }
+
+.row { display: flex; align-items: center; gap: 10px; }
+.row.between { justify-content: space-between; }
+.row.wrap-w { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--fg2); font-size: 13px; }
+.muted.sm { font-size: 12px; }
+.tiny { font-size: 11px; color: var(--fg3); }
+.center { text-align: center; }
+.mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; }
+.mb8 { margin-bottom: 8px; }
+.nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 배지 ---------- */
+.badge {
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: var(--card2); color: var(--fg2); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.badge.field { background: #143d2a; color: #7ff0b0; border-color: #1d5a3d; }
+.badge.screen { background: #16304a; color: #8fcaf5; border-color: #1f4a70; }
+.badge.warn { background: #4a3616; color: #ffcf7a; border-color: #6b4d1f; }
+.badge.live { background: #4a1620; color: #ff9aa5; border-color: #6b1f2c; }
+
+/* ---------- 버튼 ---------- */
+button, .btn {
+  font-family: inherit; font-size: 15px;
+  background: var(--card2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 14px; cursor: pointer;
+  transition: transform .06s, background .12s;
+}
+button:active, .btn:active { transform: scale(0.97); }
+button.primary, .btn.primary { background: var(--green-d); border-color: #2a9a5f; color: #fff; font-weight: 600; }
+button.ghost { background: transparent; }
+button.danger { background: #4a1a1a; border-color: #6b2626; color: #ffb3b3; }
+button.full { width: 100%; }
+button.sm { padding: 7px 10px; font-size: 13px; }
+button:disabled { opacity: .4; cursor: default; }
+.btnrow { display: flex; gap: 8px; }
+.btnrow > * { flex: 1; }
+
+/* ---------- 폼 ---------- */
+label.field { display: block; margin-bottom: 12px; }
+label.field > span { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 5px; }
+input, select, textarea {
+  width: 100%; font-family: inherit; font-size: 16px;
+  background: var(--bg2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 12px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--green-d); outline-offset: -1px; }
+textarea { resize: vertical; min-height: 70px; }
+input[type=number] { -moz-appearance: textfield; }
+input.num { text-align: center; }
+
+/* ---------- 세그먼트 (필드/스크린 등) ---------- */
+.seg { display: flex; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button {
+  flex: 1; background: transparent; border: none; padding: 10px 8px; border-radius: 9px;
+  color: var(--fg2); font-size: 14px; font-weight: 600;
+}
+.seg button.on { background: var(--green-d); color: #fff; }
+
+/* ---------- 통계 타일 ---------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.tile {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 10px; text-align: center;
+}
+.tile .v { font-size: 24px; font-weight: 700; line-height: 1.1; }
+.tile .v.small { font-size: 18px; }
+.tile .k { font-size: 11px; color: var(--fg2); margin-top: 4px; }
+.tile .sub { font-size: 10px; color: var(--fg3); margin-top: 2px; }
+
+/* ---------- 스코어 색 ---------- */
+.sc-eagle { color: #ffd166; }
+.sc-birdie { color: #ff8fab; }
+.sc-par { color: var(--fg); }
+.sc-bogey { color: #8fcaf5; }
+.sc-double { color: #ff8f8f; }
+
+/* ---------- 홀 플레이 화면 ---------- */
+.holehead {
+  background: linear-gradient(135deg, #1d3a2c, #16261f);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.holehead .top { display: flex; align-items: baseline; gap: 10px; }
+.holehead .hno { font-size: 34px; font-weight: 800; line-height: 1; }
+.holehead .hno small { font-size: 13px; font-weight: 500; color: var(--fg2); }
+.holehead .meta { margin-left: auto; text-align: right; }
+.holehead .par { font-size: 17px; font-weight: 700; }
+.holehead .dist { font-size: 13px; color: var(--fg2); }
+
+.holenav { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.holenav button { padding: 12px 14px; }
+.holenav .pos { flex: 1; text-align: center; font-size: 13px; color: var(--fg2); }
+
+/* 홀 점프 바 */
+.holebar { display: flex; gap: 4px; overflow-x: auto; padding: 6px 0 10px; -webkit-overflow-scrolling: touch; }
+.holebar button {
+  min-width: 38px; padding: 8px 0; font-size: 13px; border-radius: 9px; flex-shrink: 0;
+}
+.holebar button.cur { background: var(--green-d); border-color: #2a9a5f; color: #fff; font-weight: 700; }
+.holebar button.done { border-color: #3b5a4b; }
+
+/* 클럽 버튼 그리드 */
+.clubgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 7px; }
+.clubgrid button {
+  padding: 10px 4px; font-size: 13px; font-weight: 600; line-height: 1.25; border-radius: 10px;
+}
+.clubgrid button .d { display: block; font-size: 10px; color: var(--fg3); font-weight: 400; margin-top: 2px; }
+.clubgrid button.sug { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green-d); }
+.clubgrid button.used { background: var(--green-d); color: #fff; }
+
+.shotlist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 20px; }
+.shotchip {
+  background: var(--card2); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 10px 6px 8px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;
+}
+.shotchip .n {
+  background: var(--green-d); color: #fff; width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+}
+.shotchip .x { color: var(--fg3); font-size: 15px; margin-left: 2px; }
+
+/* 스텝퍼 (+/-) */
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper button { width: 46px; height: 46px; font-size: 22px; padding: 0; font-weight: 700; }
+.stepper .v { min-width: 52px; text-align: center; font-size: 24px; font-weight: 700; }
+
+/* 공략법 카드 */
+.plan { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.plan h3 { margin: 0 0 10px; font-size: 14px; color: var(--green); display: flex; align-items: center; gap: 6px; }
+.step { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.step:first-of-type { border-top: none; }
+.step.alt { opacity: .72; }
+.step .num {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;
+  background: var(--green-d); color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; margin-top: 2px;
+}
+.step.alt .num { background: var(--card2); color: var(--fg2); }
+.step .body { flex: 1; min-width: 0; }
+.step .lbl { font-size: 12px; color: var(--fg2); }
+.step .club { font-size: 16px; font-weight: 700; }
+.step .club em { font-style: normal; color: var(--green); }
+.step .note { font-size: 12px; color: var(--fg2); margin-top: 3px; }
+.tiplist { margin: 10px 0 0; padding: 0; list-style: none; }
+.tiplist li {
+  font-size: 13px; color: var(--fg2); padding: 6px 0 6px 16px; position: relative; line-height: 1.45;
+}
+.tiplist li:before { content: '·'; position: absolute; left: 4px; color: var(--green); font-weight: 700; }
+
+.mynote {
+  background: #2a2416; border: 1px solid #4a3f1f; border-radius: 10px; padding: 10px 12px; margin-top: 10px;
+}
+.mynote .t { font-size: 11px; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
+.mynote .c { font-size: 14px; white-space: pre-wrap; }
+
+/* ---------- 스코어카드 표 ---------- */
+.cardwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); border: 1px solid var(--line); }
+table.scard { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 560px; }
+table.scard th, table.scard td { padding: 7px 4px; text-align: center; border-bottom: 1px solid var(--line); }
+table.scard th { background: var(--bg2); color: var(--fg2); font-weight: 600; font-size: 11px; position: sticky; top: 0; }
+table.scard td.lbl { text-align: left; padding-left: 10px; color: var(--fg2); font-size: 12px; white-space: nowrap; }
+table.scard tr.sum td { background: var(--bg2); font-weight: 700; }
+table.scard td.score { font-weight: 700; }
+
+/* ---------- 리스트 ---------- */
+.list .item {
+  display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+  border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.list .item:last-child { border-bottom: none; }
+.list .item:active { background: var(--card2); }
+.list { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.list .item .main { flex: 1; min-width: 0; }
+.list .item .title { font-size: 15px; font-weight: 600; }
+.list .item .desc { font-size: 12px; color: var(--fg2); margin-top: 2px; }
+.list .item .right { text-align: right; flex-shrink: 0; }
+.list .item .big { font-size: 20px; font-weight: 700; }
+
+/* 자주 가는 곳 별표 */
+.list .item button.star {
+  background: none; border: none; font-size: 21px; line-height: 1;
+  color: var(--fg3); padding: 8px 2px 8px 8px; flex-shrink: 0;
+}
+.list .item button.star.on { color: var(--accent); }
+
+/* 검색창 */
+.search { position: relative; margin-bottom: 10px; }
+.search input { padding-left: 38px; }
+.search:before {
+  content: '\1F50D'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 14px; opacity: .6;
+}
+
+/* ---------- 추이 그래프 ---------- */
+.spark { width: 100%; height: 130px; display: block; }
+
+/* ---------- 진단 ---------- */
+.diag { border-left: 3px solid var(--line); padding: 10px 0 10px 12px; margin-bottom: 12px; }
+.diag.high { border-left-color: var(--red); }
+.diag.mid { border-left-color: var(--accent); }
+.diag.ok { border-left-color: var(--green); }
+.diag .t { font-weight: 700; font-size: 15px; }
+.diag .d { font-size: 13px; color: var(--fg2); margin-top: 3px; }
+.diag .a { font-size: 13px; color: var(--green); margin-top: 5px; }
+
+/* ---------- 하단 탭 ---------- */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; background: #131d19; border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-b);
+}
+.tabbar a {
+  flex: 1; text-align: center; padding: 9px 0 8px; text-decoration: none;
+  color: var(--fg3); font-size: 10px;
+}
+.tabbar a .ic { display: block; font-size: 20px; margin-bottom: 1px; }
+.tabbar a.on { color: var(--green); }
+
+/* ---------- 모달 ---------- */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.modal {
+  background: var(--bg2); border-top-left-radius: 18px; border-top-right-radius: 18px;
+  width: 100%; max-width: 720px; max-height: 88vh; overflow-y: auto;
+  padding: 18px 16px calc(20px + var(--safe-b));
+  border: 1px solid var(--line);
+}
+.modal h3 { margin: 0 0 14px; font-size: 17px; }
+
+/* ---------- 토스트 ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(84px + var(--safe-b)); transform: translate(-50%, 20px);
+  background: #263a31; color: #fff; border: 1px solid var(--line);
+  padding: 11px 16px; border-radius: 10px; font-size: 14px; z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+  max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { background: #4a1a1a; }
+
+/* ---------- 빈 상태 ---------- */
+.empty { text-align: center; padding: 40px 20px; color: var(--fg2); }
+.empty .ic { font-size: 42px; margin-bottom: 10px; opacity: .5; }
+
+hr.sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+
+/* 홀별 편집 테이블 */
+table.edit { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.edit th { font-size: 11px; color: var(--fg2); padding: 4px; font-weight: 600; }
+table.edit td { padding: 3px 2px; }
+table.edit input, table.edit select { padding: 8px 4px; text-align: center; font-size: 15px; }
+table.edit td.no { text-align: center; color: var(--fg2); font-size: 13px; width: 32px; }
+
+@media (min-width: 560px) {
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+}
