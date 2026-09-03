@@ -94,6 +94,7 @@
   function pickCourse(course) {
     NS.courseId = course.id;
     NS.nineIds = [];
+    App.resetScroll();   // 목록 -> 설정 화면으로 바뀌므로 맨 위부터 보여 준다
     if (course.nines.length === 2 && course.nines[0].holes.length === 9 && course.nines[1].holes.length === 9) {
       NS.nineIds = [course.nines[0].id, course.nines[1].id];
     } else if (course.nines.length === 1 && course.nines[0].holes.length === 18) {
@@ -224,7 +225,7 @@
             U.el('div', { style: 'font-weight:700;font-size:16px', text: selected.name }),
             U.el('div', { class: 'muted sm mt8' }, [(selected.region || '') + ' ', App.estBadge(selected)])
           ]),
-          U.el('button', { class: 'sm ghost', onclick: function () { NS.courseId = null; App.render(); } }, '변경')
+          U.el('button', { class: 'sm ghost', onclick: function () { NS.courseId = null; App.resetScroll(); App.render(); } }, '변경')
         ]),
         U.el('div', { class: 'btnrow mt12' }, [
           U.el('button', { class: 'sm', onclick: function () { App.go('course/' + selected.id); } }, '코스 정보 보기 / 수정')

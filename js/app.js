@@ -25,7 +25,22 @@
     else App.go('home');
   };
 
+  /* 화면을 다시 그릴 때 스크롤 위치 처리.
+     App.root 를 비우는 순간 문서 높이가 0이 되면서 브라우저가 스크롤을 맨 위로 되돌린다.
+     그래서 지우기 전에 위치를 기억해 뒀다가 다시 그린 뒤 복원한다.
+     같은 화면을 다시 그리는 경우(코스 선택, 날씨 선택, 클럽 탭 등)에는 그 자리를 유지하고,
+     다른 화면으로 이동할 때만 맨 위로 올린다. */
+  var lastRouteKey = null;
+  var forceTop = false;
+  App.resetScroll = function () { forceTop = true; };
+
   function render() {
+    var prevScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
+    var routeKey = location.hash || '#/home';
+    var sameView = (routeKey === lastRouteKey) && !forceTop;
+    lastRouteKey = routeKey;
+    forceTop = false;
+
     var r = parseHash();
     var view = App.views[r.name] || App.views.home;
     App.current = r;
@@ -52,7 +67,14 @@
     App.root.appendChild(wrap);
 
     App.root.appendChild(tabbar(r.name));
-    window.scrollTo(0, out.keepScroll ? window.scrollY : 0);
+
+    if (sameView && prevScroll > 0) {
+      // 내용이 다시 채워진 뒤에 복원해야 한다 (한 번 더 잡아 주면 폰트/이미지 로딩 후에도 안 튄다)
+      window.scrollTo(0, prevScroll);
+      requestAnimationFrame(function () { window.scrollTo(0, prevScroll); });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }
   App.render = render;
 
