@@ -1,12 +1,11 @@
 /* 골프장 기본 데이터
  * ------------------------------------------------------------------
  * [정확도 안내]
- * 골프장 이름 / 지역 / 코스 구성은 알려진 정보를 바탕으로 넣었습니다.
- * 코스 하나는 9홀(OUT/IN) 또는 18홀(54홀 리조트의 챔피언·드래곤 등)일 수 있습니다.
- * 그러나 홀별 파 배치, 거리, 핸디캡 순번은 실제 스코어카드 값이 아니라
- * 표준 규격에서 만들어낸 추정값입니다. (par 72 기준)
- * 앱에서는 이런 코스에 "거리 미확인" 배지가 표시되며,
- * 설정 > 골프장 관리에서 실제 스코어카드를 보고 수정하면 배지가 사라집니다.
+ * 베트남 북부 골프장은 js/courses-north.js 에 공개 스코어카드를 넣어 두었고,
+ * 그 코스는 홀별 파와 핸디캡 순번이 실제 값입니다. (배지: 스코어카드)
+ * 그 밖의 코스는 표준 규격에서 만들어낸 추정값입니다. (배지: 거리 추정 / 총거리만 확인)
+ * 설정 > 골프장 관리에서 실제 스코어카드를 보고 수정한 뒤
+ * "실제 값으로 확인함"을 누르면 배지가 "내가 확인함"으로 바뀝니다.
  * ------------------------------------------------------------------ */
 (function (g) {
   'use strict';
@@ -52,24 +51,24 @@
       [['챔피언 (Champion)', 0, 1], ['드래곤 (Dragon)', 2, 3], ['피닉스 (Phoenix)', 1, 0]],
       '피닉스 Phoenix 훼닉스', true],
     ['vn-hilltopvalley', '힐탑밸리 골프클럽', 'Hilltop Valley Golf Club', '호아빈', '북부',
-      [['OUT', 3], ['IN', 0]]],
+      [['A코스', 3], ['B코스', 0], ['C코스', 1]]],
     ['vn-tamdao', '땀다오 골프리조트', 'Tam Dao Golf Resort', '빈푹', '북부',
       [['OUT', 1], ['IN', 2]],
       '땀다오 탐다오 Tam Dao', true],
     ['vn-dailai', '다이라이 스타 골프 앤 컨트리클럽', 'Dai Lai Star Golf and Country Club', '빈푹', '북부',
-      [['OUT', 0], ['IN', 3]]],
+      [['OUT', 0], ['IN', 3], ['C코스', 1]]],
     ['vn-heronlake', '헤론레이크 골프코스 앤 리조트', 'Heron Lake Golf Course and Resort', '빈푹 담박', '북부',
       [['OUT', 2], ['IN', 1]]],
     ['vn-thanhlanh', '타인란 밸리 골프 앤 리조트', 'Thanh Lanh Valley Golf and Resort', '빈푹', '북부',
       [['OUT', 0], ['IN', 2]]],
     ['vn-chilinh', '찌린 스타 골프 앤 컨트리클럽', 'Chi Linh Star Golf and Country Club', '하이즈엉', '북부',
-      [['A코스', 0], ['B코스', 1], ['C코스', 2], ['D코스', 3]]],
+      [['밸리 (Valley)', 0], ['레이크 (Lake)', 1], ['힐 (Hill)', 2]]],
     ['vn-rubytree', 'BRG 루비트리 골프리조트', 'BRG Ruby Tree Golf Resort', '하이퐁 도선', '북부',
       [['OUT', 1], ['IN', 0]]],
     ['vn-vinpearlhp', '빈펄 골프 하이퐁', 'Vinpearl Golf Hai Phong', '하이퐁 부옌', '북부',
-      [['A코스', 0], ['B코스', 2], ['C코스', 1]]],
+      [['레이크 (Lake)', 0, 2], ['마시 (Marsh)', 1, 3]]],
     ['vn-yendung', '옌중 리조트 앤 골프클럽', 'Yen Dung Resort and Golf Club', '박장', '북부',
-      [['A코스', 3], ['B코스', 0], ['C코스', 1]]],
+      [['OUT', 3], ['IN', 0]]],
     ['vn-trangan', '짱안 골프 앤 컨트리클럽', 'Trang An Golf and Country Club', '닌빈', '북부',
       [['A코스', 1], ['B코스', 2], ['C코스', 0]]],
     ['vn-royalninhbinh', '로얄 골프클럽 닌빈', 'Royal Golf Club Ninh Binh', '닌빈', '북부',
@@ -167,10 +166,106 @@
   /* 기본 데이터 버전.
      이 숫자를 올리면, 사용자가 "실제 값으로 확인함"을 누르지 않은 기본 골프장은
      다음 실행 때 새 데이터로 교체된다. (즐겨찾기 표시는 유지) */
-  var DATA_VERSION = 2;
+  var DATA_VERSION = 3;
+
+  var YD = 1.09361;   // 1m = 1.09361yd
+
+  /* 공개된 스코어카드로 9홀/18홀을 만든다.
+     spec.holes = [[파, 야드, 핸디캡순번], ...]
+     spec.scaleTo 가 있으면 공식 챔피언 티 총길이에 맞춰 홀별 값을 같은 비율로 환산한다. */
+  /* 홀 길이의 현실적인 상·하한 (야드, 챔피언 티 기준).
+     레드 티 카드를 챔피언 티 총길이에 맞춰 늘리면 특정 홀이 769야드처럼
+     말이 안 되는 값이 나오므로, 상한을 넘긴 만큼을 여유 있는 홀에 나눠 준다. */
+  var LIMITS = { 3: [110, 250], 4: [260, 500], 5: [460, 640], 6: [600, 750] };
+
+  function holesFromCard(spec) {
+    var raw = spec.holes;
+    var sum = 0;
+    raw.forEach(function (h) { sum += h[1]; });
+
+    // 9홀 카드가 18홀 전체 길이에 맞춰 환산돼야 하는 경우 절반만 목표로 잡는다
+    var target = spec.scaleTo;
+    if (target && spec.half) target = target / 2;
+
+    var yards = raw.map(function (h) { return h[1]; });
+
+    if (target && sum) {
+      yards = raw.map(function (h) { return h[1] * (target / sum); });
+
+      // 상·하한을 넘긴 홀을 고정하고, 남은 차이를 나머지 홀에 비례 배분한다
+      for (var pass = 0; pass < 6; pass++) {
+        var fixed = [], free = [], freeSum = 0, fixedSum = 0;
+        yards.forEach(function (v, i) {
+          var lim = LIMITS[raw[i][0]] || [0, 9999];
+          if (v > lim[1]) { yards[i] = lim[1]; fixed.push(i); }
+          else if (v < lim[0]) { yards[i] = lim[0]; fixed.push(i); }
+          else { free.push(i); }
+        });
+        yards.forEach(function (v, i) {
+          if (fixed.indexOf(i) >= 0) fixedSum += v; else freeSum += v;
+        });
+        var need = target - fixedSum;
+        if (!free.length || freeSum <= 0) break;
+        var f = need / freeSum;
+        if (Math.abs(f - 1) < 0.005) break;
+        free.forEach(function (i) { yards[i] = yards[i] * f; });
+      }
+    }
+
+    return yards.map(function (v, i) {
+      return {
+        no: i + 1,
+        par: raw[i][0],
+        dist: Math.round(v / YD),   // 저장은 미터
+        si: raw[i][2]               // 실제 핸디캡(난이도) 순번
+      };
+    });
+  }
 
   function buildCourse(row, kind) {
     var id = row[0], name = row[1], nameEn = row[2], region = row[3], area = row[4], courses = row[5];
+    var card = (g.COURSE_CARDS || {})[id] || null;
+
+    var nines = courses.map(function (n, ni) {
+      var spec = card && card.nines ? card.nines[n[0]] : null;
+      if (spec) {
+        return {
+          id: id + '-n' + ni,
+          name: n[0],
+          real: true,                 // 공개 스코어카드 기반
+          srcTee: spec.card || null,  // 원본 카드의 티박스
+          desc: spec.desc || '',
+          holes: holesFromCard(spec)
+        };
+      }
+      // 카드가 없는 코스는 표준 파 배치 + 추정 거리
+      var pars = [];
+      for (var k = 1; k < n.length; k++) pars = pars.concat(ROUTINGS[n[k]]);
+      return {
+        id: id + '-n' + ni,
+        name: n[0],
+        real: false,
+        holes: pars.map(function (par, hi) {
+          return { no: hi + 1, par: par, dist: estDistance(id + '|' + ni + '|' + hi, par) };
+        })
+      };
+    });
+
+    // 총 길이만 확인된 골프장은 추정 홀 거리를 그 총합에 맞춰 조정한다
+    if (card && card.totalOnly) {
+      var target = (card.totalOnly / YD) / 2;   // 9홀당 목표 (미터)
+      nines.forEach(function (n) {
+        if (n.real || n.holes.length !== 9) return;
+        var sum = 0;
+        n.holes.forEach(function (h) { sum += h.dist; });
+        var f = sum ? target / sum : 1;
+        n.holes.forEach(function (h) { h.dist = Math.round(h.dist * f); });
+      });
+    }
+
+    var anyReal = nines.some(function (n) { return n.real; });
+    var allReal = nines.every(function (n) { return n.real; });
+
     return {
       id: id,
       kind: kind,
@@ -181,20 +276,17 @@
       alias: row[6] || '',    // 검색용 별칭 (예: 킹스아일랜드를 "동모"로 검색)
       fav: !!row[7],          // 자주 가는 곳 (목록 맨 위에 고정)
       builtin: true,
-      verified: false,
+      verified: false,        // 사용자가 직접 확인했는지 (실제 카드 유무와 별개)
+      // 'card' = 공개 스코어카드 기반, 'partial' = 일부만, 'est' = 전부 추정
+      quality: allReal ? 'card' : anyReal ? 'partial' : (card && card.totalOnly) ? 'total' : 'est',
+      info: card ? {
+        designer: card.designer || '',
+        year: card.year || null,
+        desc: card.desc || '',
+        src: card.src || ''
+      } : null,
       dv: DATA_VERSION,
-      // n = [코스명, 라우팅] 이면 9홀, [코스명, 라우팅1, 라우팅2] 면 18홀
-      nines: courses.map(function (n, ni) {
-        var pars = [];
-        for (var k = 1; k < n.length; k++) pars = pars.concat(ROUTINGS[n[k]]);
-        return {
-          id: id + '-n' + ni,
-          name: n[0],
-          holes: pars.map(function (par, hi) {
-            return { no: hi + 1, par: par, dist: estDistance(id + '|' + ni + '|' + hi, par) };
-          })
-        };
-      })
+      nines: nines
     };
   }
 

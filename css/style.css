@@ -174,6 +174,7 @@ table.scard td, table.scard th, .score-lg { font-variant-numeric: tabular-nums; 
 }
 .badge.field { background: rgba(63, 224, 141, .13); color: #8bf0bb; border-color: rgba(63, 224, 141, .28); }
 .badge.screen { background: rgba(97, 176, 240, .13); color: #a5d3f8; border-color: rgba(97, 176, 240, .28); }
+.badge.ok { background: rgba(63, 224, 141, .13); color: #8bf0bb; border-color: rgba(63, 224, 141, .28); }
 .badge.warn { background: rgba(255, 207, 92, .12); color: var(--gold); border-color: rgba(255, 207, 92, .28); }
 .badge.live { background: rgba(255, 122, 122, .14); color: #ffb0b0; border-color: rgba(255, 122, 122, .3); }
 .badge.live:before {

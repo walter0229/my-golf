@@ -397,13 +397,17 @@
       ])
     ]));
 
-    if (!course.verified) {
+    var infoCard = App.courseInfoCard(course);
+    if (infoCard) {
+      body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '골프장 정보' }), infoCard]));
+    }
+    if (!course.verified && (course.quality === 'est' || course.quality === 'total')) {
       body.appendChild(U.el('div', { class: 'card', style: 'border-color:#6b4d1f' }, [
         U.el('div', { class: 'row', style: 'gap:8px' }, [
-          U.el('span', { class: 'badge warn', text: '거리 미확인' }),
-          U.el('span', { class: 'muted sm grow', text: '이 코스의 파/거리는 표준 추정값입니다.' })
+          App.estBadge(course),
+          U.el('span', { class: 'muted sm grow', text: '홀별 파/거리가 추정값입니다.' })
         ]),
-        U.el('div', { class: 'muted sm mt8', text: '실제 스코어카드를 보고 아래 표를 채운 뒤 "실제 값으로 확인함"을 누르면 배지가 사라지고 공략법이 정확해집니다.' })
+        U.el('div', { class: 'muted sm mt8', text: '실제 스코어카드를 보고 아래 표를 채운 뒤 "실제 값으로 확인함"을 누르면 공략법이 정확해집니다.' })
       ]));
     }
 

@@ -229,7 +229,8 @@
         U.el('div', { class: 'btnrow mt12' }, [
           U.el('button', { class: 'sm', onclick: function () { App.go('course/' + selected.id); } }, '코스 정보 보기 / 수정')
         ])
-      ])
+      ]),
+      App.courseInfoCard(selected)
     ]));
 
     /* 플레이할 코스 선택.
@@ -387,13 +388,26 @@
       ])
     ]));
 
+    // --- 코스 안내 (공식 코스 설명) ---
+    var curNine = course ? Store.nine(round.courseId, hole.nineId) : null;
+    if (curNine && curNine.desc) {
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '코스 안내' }),
+        U.el('div', { class: 'card' }, [
+          U.el('div', { style: 'font-size:13.5px;line-height:1.6', text: curNine.desc })
+        ])
+      ]));
+    }
+
     // --- 공략법 ---
     var clubs = Store.swingClubs();
     var coursePar = round.holes.reduce(function (a, h) { return a + h.par; }, 0);
     var extra = Math.max(0, (Store.settings().targetScore || 90) - coursePar);
     var plan = Strategy.build(hole, {
       clubs: clubs, unit: Store.unit(), extraStrokes: extra,
-      kind: round.kind, estimated: course && !course.verified
+      kind: round.kind,
+      // 공개 스코어카드가 있는 코스는 "추정값" 안내를 띄우지 않는다
+      estimated: !!(course && !course.verified && !(curNine && curNine.real))
     });
 
     var planCard = U.el('div', { class: 'plan' }, [U.el('h3', {}, ['🎯 이 홀 공략법'])]);

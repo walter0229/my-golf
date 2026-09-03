@@ -126,10 +126,48 @@
     return U.el('span', { class: 'badge ' + kind, text: kind === 'screen' ? '스크린' : '필드' });
   };
 
-  // 코스 거리가 추정값인지 표시
+  /* 코스 데이터의 출처를 배지로 알린다.
+     card    = 공개 스코어카드 기반 (파·거리 비율·핸디캡 순번이 실제 값)
+     partial = 일부 코스만 스코어카드
+     total   = 총 길이만 확인, 홀별은 추정
+     est     = 전부 추정 */
   App.estBadge = function (course) {
-    if (!course || course.verified) return null;
-    return U.el('span', { class: 'badge warn', text: '거리 미확인' });
+    if (!course) return null;
+    if (course.verified) return U.el('span', { class: 'badge field', text: '내가 확인함' });
+    var q = course.quality || 'est';
+    if (q === 'card') return U.el('span', { class: 'badge ok', text: '스코어카드' });
+    if (q === 'partial') return U.el('span', { class: 'badge ok', text: '스코어카드 일부' });
+    if (q === 'total') return U.el('span', { class: 'badge warn', text: '총거리만 확인' });
+    return U.el('span', { class: 'badge warn', text: '거리 추정' });
+  };
+
+  // 골프장 정보(설계자·개장연도·설명·출처) 카드
+  App.courseInfoCard = function (course, nine) {
+    if (!course) return null;
+    var info = course.info;
+    var rows = [];
+    if (info && (info.designer || info.year)) {
+      rows.push(U.el('div', { class: 'muted sm' }, [
+        (info.designer || '') + (info.year ? ' · ' + info.year + '년 개장' : '')
+      ]));
+    }
+    if (info && info.desc) rows.push(U.el('div', { class: 'mt8', style: 'font-size:13.5px;line-height:1.6', text: info.desc }));
+    if (nine && nine.desc) {
+      rows.push(U.el('div', { class: 'mynote mt12' }, [
+        U.el('div', { class: 't', text: nine.name }),
+        U.el('div', { class: 'c', text: nine.desc })
+      ]));
+    }
+    if (nine && nine.real) {
+      rows.push(U.el('div', { class: 'tiny mt12', text: '홀별 파와 난이도 순번은 공개 스코어카드 값입니다. 거리는 그 카드의 홀별 비율을 공식 총길이에 맞춰 환산한 값이라 실제와 몇 야드 차이가 날 수 있습니다.' }));
+    } else if (course.quality === 'total') {
+      rows.push(U.el('div', { class: 'tiny mt12', text: '공식 총 길이만 확인했습니다. 홀별 파와 거리는 추정값입니다.' }));
+    } else if (!course.verified && course.quality === 'est') {
+      rows.push(U.el('div', { class: 'tiny mt12', text: '홀별 파와 거리는 추정값입니다. 스코어카드를 보고 수정하면 공략이 정확해집니다.' }));
+    }
+    if (info && info.src) rows.push(U.el('div', { class: 'tiny mt8', text: '출처: ' + info.src }));
+    if (!rows.length) return null;
+    return U.el('div', { class: 'card' }, rows);
   };
 
   // ---------- 홈 ----------

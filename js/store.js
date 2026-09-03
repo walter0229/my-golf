@@ -276,6 +276,7 @@
             nineName: n.name,
             holeNo: h.no,
             par: h.par,
+            si: h.si || null,                  // 스코어카드의 실제 난이도 순번
             dist: Math.round(h.dist * factor), // 미터
             score: null,
             putts: null,
@@ -292,12 +293,25 @@
         });
       });
 
-      // 홀 핸디캡(난이도 순번)을 계산: 파가 크고 거리가 긴 홀이 어렵다고 본다.
-      var order = holes.slice().sort(function (a, b) {
-        if (b.par !== a.par) return b.par - a.par;
-        return b.dist - a.dist;
+      /* 홀 난이도(핸디캡) 순번.
+         실제 스코어카드의 순번(si)이 모두 있고 1..N 이 겹치지 않게 들어와 있으면 그대로 쓰고,
+         (예: 9홀 코스 두 개를 원래 짝이 아닌 조합으로 골라 순번이 겹치는 경우)
+         그렇지 않으면 파와 거리로 다시 계산한다. */
+      var seen = {}, siOk = holes.length > 0;
+      holes.forEach(function (h) {
+        var v = h.si;
+        if (typeof v !== 'number' || v < 1 || v > holes.length || seen[v]) siOk = false;
+        seen[v] = true;
       });
-      order.forEach(function (h, i) { h.hcp = i + 1; });
+      if (siOk) {
+        holes.forEach(function (h) { h.hcp = h.si; });
+      } else {
+        var order = holes.slice().sort(function (a, b) {
+          if (b.par !== a.par) return b.par - a.par;
+          return b.dist - a.dist;
+        });
+        order.forEach(function (h, i) { h.hcp = i + 1; });
+      }
 
       var round = {
         id: U.uid('r'),
