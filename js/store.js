@@ -101,9 +101,21 @@
         added++;
         return;
       }
+      // 기본 데이터가 수정됐고(예: 피닉스를 27홀 -> 54홀로 정정),
+      // 사용자가 "실제 값으로 확인함"을 누르지 않은 코스라면 새 데이터로 교체한다.
+      // 직접 확인·수정한 코스(verified)는 절대 덮어쓰지 않는다.
+      if (mine.builtin && !mine.verified && (mine.dv || 1) < (c.dv || 1)) {
+        var keepFav = mine.fav;
+        var fresh = JSON.parse(JSON.stringify(c));
+        fresh.fav = (keepFav === undefined) ? c.fav : keepFav;
+        state.courses[state.courses.indexOf(mine)] = fresh;
+        patched++;
+        return;
+      }
       // 이전 버전에 없던 항목은 채워 준다 (사용자가 고친 파/거리는 건드리지 않는다)
       if (mine.alias === undefined) { mine.alias = c.alias; patched++; }
       if (mine.fav === undefined) { mine.fav = c.fav; patched++; }
+      if (mine.dv === undefined) { mine.dv = 1; patched++; }
     });
     if (added || patched) save();
     return added;

@@ -1,6 +1,6 @@
 /* 서비스 워커: 필드에서 인터넷이 안 터져도 앱이 열리도록 파일을 캐시해 둔다.
    앱 파일을 수정했다면 아래 CACHE 이름의 숫자를 올려야 새 버전이 적용된다. */
-var CACHE = 'golf-score-v2';
+var CACHE = 'golf-score-v3';
 var FILES = [
   './',
   './index.html',

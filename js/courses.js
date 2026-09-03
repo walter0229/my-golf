@@ -1,7 +1,8 @@
 /* 골프장 기본 데이터
  * ------------------------------------------------------------------
  * [정확도 안내]
- * 골프장 이름 / 지역 / 코스(9홀) 구성은 알려진 정보를 바탕으로 넣었습니다.
+ * 골프장 이름 / 지역 / 코스 구성은 알려진 정보를 바탕으로 넣었습니다.
+ * 코스 하나는 9홀(OUT/IN) 또는 18홀(54홀 리조트의 챔피언·드래곤 등)일 수 있습니다.
  * 그러나 홀별 파 배치, 거리, 핸디캡 순번은 실제 스코어카드 값이 아니라
  * 표준 규격에서 만들어낸 추정값입니다. (par 72 기준)
  * 앱에서는 이런 코스에 "거리 미확인" 배지가 표시되며,
@@ -27,10 +28,15 @@
   ];
 
   /* 베트남 필드 골프장
-     [id, 한글명, 영문명, 지역, 권역, [ [코스명, 라우팅번호], ... ], 별칭(검색어), 즐겨찾기 ] */
+     [id, 한글명, 영문명, 지역, 권역, [ 코스, ... ], 별칭(검색어), 즐겨찾기 ]
+
+     코스 하나는 두 가지 형태로 쓴다:
+       ['OUT', 0]        -> 9홀  (18홀 코스를 OUT/IN 으로 나눠 쓰는 일반적인 골프장)
+       ['챔피언', 0, 1]  -> 18홀 (그 자체로 완결된 18홀 코스. 54홀 리조트 등)
+     라운드를 만들 때 합계가 18홀이 되도록 고르면 된다. */
   var VN = [
     ['vn-kingsisland', 'BRG 킹스아일랜드 골프리조트', 'BRG Kings Island Golf Resort', '하노이 선떠이', '북부',
-      [['레이크사이드 OUT', 0], ['레이크사이드 IN', 1], ['마운틴뷰 OUT', 2], ['마운틴뷰 IN', 3], ['킹스 OUT', 1], ['킹스 IN', 0]],
+      [['레이크사이드 (Lakeside)', 0, 1], ['마운틴뷰 (Mountainview)', 2, 3], ['킹스 (Kings)', 1, 0]],
       '동모 동모호수 Dong Mo 킹스 아일랜드 킹아', true],
     ['vn-legendhill', 'BRG 레전드힐 골프리조트', 'BRG Legend Hill Golf Resort', '하노이 속선', '북부',
       [['OUT', 0], ['IN', 1]]],
@@ -39,10 +45,11 @@
     ['vn-longbien', '롱비엔 골프코스', 'Long Bien Golf Course', '하노이 롱비엔', '북부',
       [['A코스', 0], ['B코스', 1], ['C코스', 3]]],
     ['vn-skylake', '스카이레이크 리조트 앤 골프클럽', 'Sky Lake Resort and Golf Club', '하노이 쯔엉미', '북부',
-      [['스카이 OUT', 2], ['스카이 IN', 0], ['레이크 OUT', 1], ['레이크 IN', 3]],
+      [['스카이 (Sky)', 2, 0], ['레이크 (Lake)', 1, 3]],
       '스카이 레이크 스레 Sky Lake', true],
+    // 54홀 (챔피언 / 드래곤 / 피닉스 각 18홀)
     ['vn-phoenix', '피닉스 골프리조트', 'Phoenix Golf Resort', '호아빈 르엉선', '북부',
-      [['챔피언', 0], ['드래곤', 1], ['피닉스', 2]],
+      [['챔피언 (Champion)', 0, 1], ['드래곤 (Dragon)', 2, 3], ['피닉스 (Phoenix)', 1, 0]],
       '피닉스 Phoenix 훼닉스', true],
     ['vn-hilltopvalley', '힐탑밸리 골프클럽', 'Hilltop Valley Golf Club', '호아빈', '북부',
       [['OUT', 3], ['IN', 0]]],
@@ -78,7 +85,7 @@
     ['vn-xuanthanh', '쑤언타인 골프 앤 리조트', 'Xuan Thanh Golf and Resort', '하띤', '중부',
       [['OUT', 0], ['IN', 2]]],
     ['vn-flcquangbinh', 'FLC 꽝빈 골프링크스', 'FLC Quang Binh Golf Links', '꽝빈', '중부',
-      [['오션 OUT', 1], ['오션 IN', 0], ['포레스트 OUT', 3], ['포레스트 IN', 2]]],
+      [['오션 (Ocean)', 1, 0], ['포레스트 (Forest)', 3, 2]]],
     ['vn-laguna', '라구나 랑꼬 골프클럽', 'Laguna Lang Co Golf Club', '후에 랑꼬', '중부',
       [['OUT', 0], ['IN', 1]]],
     ['vn-brgdanang', 'BRG 다낭 골프리조트 (노먼)', 'BRG Danang Golf Resort - Norman', '다낭', '중부',
@@ -110,7 +117,7 @@
     ['vn-sealinks', '씨링크스 골프 앤 컨트리클럽', 'Sea Links Golf and Country Club', '빈투언 무이네', '중부',
       [['OUT', 0], ['IN', 1]]],
     ['vn-vgcc', '베트남 골프 앤 컨트리클럽', 'Vietnam Golf and Country Club', '호치민 투득', '남부',
-      [['이스트 OUT', 0], ['이스트 IN', 1], ['웨스트 OUT', 2], ['웨스트 IN', 3]]],
+      [['이스트 (East)', 0, 1], ['웨스트 (West)', 2, 3]]],
     ['vn-tansonnhat', '떤선녓 골프코스', 'Tan Son Nhat Golf Course', '호치민 떤빈', '남부',
       [['A코스', 1], ['B코스', 0], ['C코스', 3], ['D코스', 2]]],
     ['vn-songbe', '송베 골프리조트', 'Song Be Golf Resort', '빈즈엉 투안안', '남부',
@@ -122,7 +129,7 @@
     ['vn-mekong', '메콩 골프클럽', 'Mekong Golf Club', '빈즈엉', '남부',
       [['OUT', 3], ['IN', 2]]],
     ['vn-longthanh', '롱타인 골프클럽', 'Long Thanh Golf Club', '동나이', '남부',
-      [['힐 OUT', 0], ['힐 IN', 1], ['레이크 OUT', 2], ['레이크 IN', 3]]],
+      [['힐 (Hill)', 0, 1], ['레이크 (Lake)', 2, 3]]],
     ['vn-taekwang', '태광 정산 컨트리클럽', 'Taekwang Jeongsan Country Club', '동나이', '남부',
       [['A코스', 1], ['B코스', 2], ['C코스', 0]]],
     ['vn-dongnai', '동나이 골프리조트', 'Dong Nai Golf Resort', '동나이', '남부',
@@ -157,8 +164,13 @@
     return 312 + (h % 96);
   }
 
+  /* 기본 데이터 버전.
+     이 숫자를 올리면, 사용자가 "실제 값으로 확인함"을 누르지 않은 기본 골프장은
+     다음 실행 때 새 데이터로 교체된다. (즐겨찾기 표시는 유지) */
+  var DATA_VERSION = 2;
+
   function buildCourse(row, kind) {
-    var id = row[0], name = row[1], nameEn = row[2], region = row[3], area = row[4], nines = row[5];
+    var id = row[0], name = row[1], nameEn = row[2], region = row[3], area = row[4], courses = row[5];
     return {
       id: id,
       kind: kind,
@@ -170,8 +182,11 @@
       fav: !!row[7],          // 자주 가는 곳 (목록 맨 위에 고정)
       builtin: true,
       verified: false,
-      nines: nines.map(function (n, ni) {
-        var pars = ROUTINGS[n[1]];
+      dv: DATA_VERSION,
+      // n = [코스명, 라우팅] 이면 9홀, [코스명, 라우팅1, 라우팅2] 면 18홀
+      nines: courses.map(function (n, ni) {
+        var pars = [];
+        for (var k = 1; k < n.length; k++) pars = pars.concat(ROUTINGS[n[k]]);
         return {
           id: id + '-n' + ni,
           name: n[0],
@@ -191,6 +206,7 @@
     TEES: TEES,
     ROUTINGS: ROUTINGS,
     BUILTIN: BUILTIN,
+    DATA_VERSION: DATA_VERSION,
     estDistance: estDistance,
     // 새 골프장을 만들 때 쓰는 빈 껍데기
     blank: function (kind) {

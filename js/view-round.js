@@ -7,6 +7,28 @@
 
   function fmtDist(m) { return U.toDisplay(m, Store.unit()) + U.unitLabel(Store.unit()); }
 
+  // 지금까지 고른 코스들의 홀 수 합계
+  function selectedHoleCount(course) {
+    var total = 0;
+    NS.nineIds.forEach(function (id) {
+      course.nines.forEach(function (n) { if (n.id === id) total += n.holes.length; });
+    });
+    return total;
+  }
+
+  /* 골프장을 고를 때, OUT/IN 두 개뿐인 평범한 18홀 골프장이면 두 코스를 미리 선택해 준다.
+     (코스가 여러 개인 곳은 직접 고르게 둔다) */
+  function pickCourse(course) {
+    NS.courseId = course.id;
+    NS.nineIds = [];
+    if (course.nines.length === 2 && course.nines[0].holes.length === 9 && course.nines[1].holes.length === 9) {
+      NS.nineIds = [course.nines[0].id, course.nines[1].id];
+    } else if (course.nines.length === 1 && course.nines[0].holes.length === 18) {
+      NS.nineIds = [course.nines[0].id];
+    }
+    App.render();
+  }
+
   /* ============================================================
      1. 새 라운드
      ============================================================ */
@@ -57,7 +79,7 @@
       function courseItem(c) {
         return U.el('div', {
           class: 'item',
-          onclick: function () { NS.courseId = c.id; NS.nineIds = []; App.render(); }
+          onclick: function () { pickCourse(c); }
         }, [
           U.el('div', { class: 'main' }, [
             U.el('div', { class: 'title nowrap', text: c.name }),
@@ -137,13 +159,17 @@
       ])
     ]));
 
-    // 코스(9홀) 선택 — 앞 9홀, 뒤 9홀
+    /* 플레이할 코스 선택.
+       코스 하나가 18홀이면 그것만 고르면 되고, 9홀짜리면 두 개를 골라 18홀을 만든다.
+       (피닉스처럼 챔피언/드래곤/피닉스가 각각 18홀인 54홀 골프장을 지원하기 위함) */
+    var selHoles = selectedHoleCount(selected);
+    var has18 = selected.nines.some(function (n) { return n.holes.length >= 18; });
     var nineSec = U.el('div', { class: 'section' }, [
-      U.el('h2', { text: '플레이할 코스 (앞 9홀 → 뒤 9홀 순서로 선택)' })
+      U.el('h2', { text: has18 ? '플레이할 코스 (18홀 코스는 하나만 고르면 됩니다)' : '플레이할 코스 (앞 9홀 → 뒤 9홀 순서로 선택)' })
     ]);
     var nineList = U.el('div', { class: 'list' });
     selected.nines.forEach(function (n) {
-      var idx = NS.nineIds.indexOf(n.id);
+      var pos = NS.nineIds.indexOf(n.id);
       var par = n.holes.reduce(function (a, h) { return a + h.par; }, 0);
       var teeDef = null;
       COURSE_DATA.TEES.forEach(function (t) { if (t.id === NS.tee) teeDef = t; });
@@ -151,23 +177,28 @@
       var dist = Math.round(n.holes.reduce(function (a, h) { return a + h.dist * f; }, 0));
       nineList.appendChild(U.el('div', {
         class: 'item',
-        style: idx >= 0 ? 'background:var(--card2)' : '',
+        style: pos >= 0 ? 'background:var(--card2)' : '',
         onclick: function () {
           var i = NS.nineIds.indexOf(n.id);
-          if (i >= 0) NS.nineIds.splice(i, 1);
-          else if (NS.nineIds.length < 2) NS.nineIds.push(n.id);
-          else { NS.nineIds = [NS.nineIds[1], n.id]; }
+          if (i >= 0) {
+            NS.nineIds.splice(i, 1);
+          } else if (selHoles + n.holes.length <= 18) {
+            NS.nineIds.push(n.id);
+          } else {
+            // 18홀을 넘기면 지금 누른 코스 하나만 남긴다
+            NS.nineIds = [n.id];
+          }
           App.render();
         }
       }, [
         U.el('div', {
           style: 'width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;' +
-            (idx >= 0 ? 'background:var(--green-d);color:#fff' : 'border:1px solid var(--line);color:var(--fg3)'),
-          text: idx >= 0 ? String(idx + 1) : ''
+            (pos >= 0 ? 'background:var(--green-d);color:#fff' : 'border:1px solid var(--line);color:var(--fg3)'),
+          text: pos >= 0 ? String(pos + 1) : ''
         }),
         U.el('div', { class: 'main' }, [
           U.el('div', { class: 'title', text: n.name }),
-          U.el('div', { class: 'desc', text: '파 ' + par + ' · ' + fmtDist(dist) })
+          U.el('div', { class: 'desc', text: n.holes.length + '홀 · 파 ' + par + ' · ' + fmtDist(dist) })
         ])
       ]));
     });
@@ -199,7 +230,8 @@
       ])
     ]));
 
-    var canStart = NS.nineIds.length === 2;
+    // 18홀이 정석이지만 9홀만 도는 경우도 있으므로 9홀 라운드도 허용한다
+    var canStart = selHoles === 18 || selHoles === 9;
     body.appendChild(U.el('button', {
       class: 'primary full', disabled: !canStart,
       onclick: function () {
@@ -213,7 +245,9 @@
           App.go('play/' + r.id + '/0');
         }
       }
-    }, canStart ? '라운드 시작 (18홀)' : '코스를 2개 선택하세요 (' + NS.nineIds.length + '/2)'));
+    }, canStart ? '라운드 시작 (' + selHoles + '홀)'
+      : selHoles === 0 ? '플레이할 코스를 선택하세요'
+        : '현재 ' + selHoles + '홀 · 18홀이 되도록 더 선택하세요'));
 
     return { title: '새 라운드', body: body, back: true };
   };
@@ -223,9 +257,10 @@
      ============================================================ */
   App.views['play'] = function (params) {
     var roundId = params[0];
-    var idx = Math.max(0, Math.min(17, parseInt(params[1], 10) || 0));
     var round = Store.round(roundId);
     if (!round) return { title: '라운드 없음', body: App.empty('❓', '해당 라운드를 찾을 수 없습니다.', '홈으로', function () { App.go('home'); }), back: true };
+    var N = round.holes.length;   // 9홀 라운드도 있으므로 18로 고정하지 않는다
+    var idx = Math.max(0, Math.min(N - 1, parseInt(params[1], 10) || 0));
 
     var hole = round.holes[idx];
     var course = Store.course(round.courseId);
@@ -245,7 +280,7 @@
     var t = Store.totals(round);
     body.appendChild(U.el('div', { class: 'holehead' }, [
       U.el('div', { class: 'top' }, [
-        U.el('div', { class: 'hno' }, [String(idx + 1), U.el('small', { text: ' / 18' })]),
+        U.el('div', { class: 'hno' }, [String(idx + 1), U.el('small', { text: ' / ' + N })]),
         U.el('div', { class: 'meta' }, [
           U.el('div', { class: 'par', text: 'PAR ' + hole.par }),
           U.el('div', { class: 'dist', text: fmtDist(hole.dist) + ' · 난이도 ' + hole.hcp + '위' })
@@ -457,8 +492,8 @@
     // --- 이동 ---
     var nav = U.el('div', { class: 'holenav' }, [
       U.el('button', { disabled: idx === 0, onclick: function () { App.go('play/' + roundId + '/' + (idx - 1)); } }, '‹ 이전'),
-      U.el('div', { class: 'pos', text: (idx + 1) + ' / 18' }),
-      idx < 17
+      U.el('div', { class: 'pos', text: (idx + 1) + ' / ' + N }),
+      idx < N - 1
         ? U.el('button', { class: 'primary', onclick: function () { App.go('play/' + roundId + '/' + (idx + 1)); } }, '다음 ›')
         : U.el('button', { class: 'primary', onclick: function () { finish(round); } }, '라운드 종료')
     ]);
@@ -519,7 +554,7 @@
 
   function finish(round) {
     var t = Store.totals(round);
-    if (t.holesPlayed < 18) {
+    if (t.holesPlayed < round.holes.length) {
       if (!U.confirm(t.holesPlayed + '홀만 기록되었습니다. 그래도 라운드를 종료할까요?')) return;
     }
     Store.finishRound(round.id);
@@ -616,11 +651,16 @@
       return U.el('div', { class: 'cardwrap mb8' }, [tbl]);
     }
 
-    body.appendChild(U.el('div', { class: 'section' }, [
-      U.el('h2', { text: '스코어카드 (숫자를 누르면 그 홀로 이동)' }),
-      tableFor(0, 9, 'OUT'),
-      tableFor(9, 18, 'IN')
-    ]));
+    // 9홀 단위로 끊어서 표를 만든다 (9홀 라운드면 표 하나만 나온다)
+    var cardSec = U.el('div', { class: 'section' }, [
+      U.el('h2', { text: '스코어카드 (숫자를 누르면 그 홀로 이동)' })
+    ]);
+    for (var from = 0; from < round.holes.length; from += 9) {
+      var to = Math.min(from + 9, round.holes.length);
+      var label = round.holes.length <= 9 ? '합계' : (from === 0 ? 'OUT' : from === 9 ? 'IN' : '소계');
+      cardSec.appendChild(tableFor(from, to, label));
+    }
+    body.appendChild(cardSec);
 
     // 홀 메모 모음
     var memos = round.holes.filter(function (h) { return h.memo; });
