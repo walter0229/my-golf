@@ -230,6 +230,31 @@
       body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '골프장별 평균' }), gl]));
     }
 
+    // 동반자별
+    var pnames = Object.keys(s.byPartner);
+    if (pnames.length) {
+      pnames.sort(function (a, b) { return (s.byPartner[a].sum / s.byPartner[a].n) - (s.byPartner[b].sum / s.byPartner[b].n); });
+      var pl = U.el('div', { class: 'list' });
+      pnames.forEach(function (name) {
+        var d = s.byPartner[name];
+        pl.appendChild(U.el('div', { class: 'item', style: 'cursor:default' }, [
+          U.el('div', { class: 'avatar', text: name.slice(0, 1) }),
+          U.el('div', { class: 'main' }, [
+            U.el('div', { class: 'title nowrap', text: name }),
+            U.el('div', { class: 'desc', text: d.n + '라운드 · 베스트 ' + d.best + ' · 최근 ' + U.fmtDate(d.lastDate) })
+          ]),
+          U.el('div', { class: 'right' }, [
+            U.el('div', { class: 'big', text: String(Math.round(d.sum / d.n)) }),
+            U.el('div', { class: 'tiny', text: '평균' })
+          ])
+        ]));
+      });
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '동반자별 평균' }), pl,
+        U.el('div', { class: 'tiny mt8', text: '18홀을 마친 라운드만 집계합니다.' })
+      ]));
+    }
+
     // 전체 라운드 목록
     var rl = U.el('div', { class: 'list' });
     Store.rounds().forEach(function (r) {

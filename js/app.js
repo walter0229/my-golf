@@ -186,15 +186,42 @@
     var sField = Stats.summary(all.filter(function (r) { return r.kind === 'field'; }));
     var sScreen = Stats.summary(all.filter(function (r) { return r.kind === 'screen'; }));
 
-    body.appendChild(U.el('div', { class: 'section' }, [
-      U.el('h2', { text: '전체 요약' }),
-      U.el('div', { class: 'tiles' }, [
-        App.tile(sAll.rounds, '라운드'),
-        App.tile(sAll.avg18 === null ? '-' : Math.round(sAll.avg18), '평균 (18홀)'),
-        App.tile(sAll.best18 === null ? '-' : sAll.best18, '베스트'),
-        App.tile(sAll.puttsPer18 === null ? '-' : U.round1(sAll.puttsPer18), '평균 퍼팅')
-      ])
-    ]));
+    // 히어로: 가장 최근 18홀 라운드를 크게 보여준다
+    var last = null;
+    Store.rounds().some(function (r) {
+      var t = Store.totals(r);
+      if (t.holesPlayed >= 9) { last = { r: r, t: t }; return true; }
+      return false;
+    });
+
+    var hero = U.el('div', { class: 'hero' });
+    if (last) {
+      hero.appendChild(U.el('div', { class: 'cap', text: '최근 라운드' }));
+      hero.appendChild(U.el('div', { class: 'score-lg' }, [
+        String(last.t.strokes),
+        U.el('small', { text: U.sign(last.t.toPar) })
+      ]));
+      hero.appendChild(U.el('div', { class: 'meta', text: last.r.courseName + ' · ' + U.fmtDate(last.r.date) + (last.r.weather ? ' · ' + last.r.weather : '') }));
+      hero.appendChild(U.el('div', { class: 'statrow' }, [
+        U.el('div', { class: 's' }, [
+          U.el('div', { class: 'n', text: sAll.avg18 === null ? '-' : String(Math.round(sAll.avg18)) }),
+          U.el('div', { class: 'l', text: '평균' })
+        ]),
+        U.el('div', { class: 's' }, [
+          U.el('div', { class: 'n', text: sAll.best18 === null ? '-' : String(sAll.best18) }),
+          U.el('div', { class: 'l', text: '베스트' })
+        ]),
+        U.el('div', { class: 's' }, [
+          U.el('div', { class: 'n', text: sAll.puttsPer18 === null ? '-' : String(U.round1(sAll.puttsPer18)) }),
+          U.el('div', { class: 'l', text: '퍼팅' })
+        ]),
+        U.el('div', { class: 's' }, [
+          U.el('div', { class: 'n', text: String(sAll.rounds) }),
+          U.el('div', { class: 'l', text: '라운드' })
+        ])
+      ]));
+    }
+    if (last) body.appendChild(hero);
 
     var kindRow = U.el('div', { class: 'row', style: 'gap:8px' });
     [['필드', sField, 'field'], ['스크린', sScreen, 'screen']].forEach(function (x) {

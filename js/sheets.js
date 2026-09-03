@@ -104,7 +104,7 @@
         var clubs = h.shots.map(function (id) { var c = Store.club(id); return c ? (c.short || c.name) : '?'; });
         rows.push([
           r.date, r.kind === 'screen' ? '스크린' : '필드', r.courseName, h.nineName, r.teeName,
-          r.weather || '', r.partners || '',
+          r.weather || '', (r.partners || []).join(', '),
           h.no, h.par, U.toDisplay(h.dist, unit),
           h.score || '', h.score ? (h.score - h.par) : '', (typeof h.putts === 'number' ? h.putts : ''),
           clubs[0] || '', clubs.join(' '),
@@ -126,7 +126,7 @@
       if (!t.holesPlayed) return;
       rows.push([
         r.date, r.kind === 'screen' ? '스크린' : '필드', r.courseName, r.nineNames.join('+'), r.teeName,
-        r.weather || '', r.partners || '',
+        r.weather || '', (r.partners || []).join(', '),
         t.holesPlayed, t.strokes, t.toPar, t.putts,
         U.pct(t.gir, t.girChance) || 0, U.pct(t.fwHit, t.fwChance) || 0,
         t.birdieOrBetter, t.par, t.bogey, t.doubleOrWorse, t.threePutt, t.ob, t.hazard, r.memo || ''

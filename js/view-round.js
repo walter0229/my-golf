@@ -5,10 +5,69 @@
   // 새 라운드 화면의 임시 선택 상태 (화면이 다시 그려져도 입력값이 날아가지 않도록 여기 담아 둔다)
   var NS = {
     kind: 'field', courseId: null, nineIds: [], tee: null, date: null, q: '',
-    weather: '', partners: '', memo: ''
+    weather: '', partners: ['', '', ''], memo: ''
   };
 
   var WEATHERS = ['맑음', '흐림', '비', '바람', '더움', '추움'];
+
+  /* 동반자 입력: 1. 2. 3. 칸을 따로 두어 이름이 한 명씩 구분되어 저장되게 한다.
+     여태 쓴 이름을 자동완성 목록으로 띄워 "김부장 / 김 부장" 처럼 표기가 갈리는 것을 막는다.
+     이렇게 저장해 두면 나중에 동반자별 통계를 낼 수 있다. */
+  function partnerInputs() {
+    var wrap = U.el('div');
+    while (NS.partners.length < 3) NS.partners.push('');
+
+    var roster = Store.partnerRoster();
+    var listId = 'partner-roster';
+    if (roster.length) {
+      var dl = U.el('datalist', { id: listId });
+      roster.forEach(function (n) { dl.appendChild(U.el('option', { value: n })); });
+      wrap.appendChild(dl);
+    }
+
+    NS.partners.forEach(function (name, i) {
+      wrap.appendChild(U.el('div', { class: 'prow' }, [
+        U.el('span', { class: 'pno', text: (i + 1) + '.' }),
+        U.el('input', {
+          type: 'text', value: name, placeholder: i === 0 ? '이름 입력 (예: 김철수)' : '이름 (선택)',
+          list: roster.length ? listId : null, autocomplete: 'off',
+          oninput: function (e) { NS.partners[i] = e.target.value; }
+        }),
+        NS.partners.length > 3 ? U.el('button', {
+          class: 'sm ghost',
+          onclick: function () { NS.partners.splice(i, 1); App.render(); }
+        }, '×') : null
+      ]));
+    });
+
+    wrap.appendChild(U.el('button', {
+      class: 'ghost sm full mt8',
+      onclick: function () { NS.partners.push(''); App.render(); }
+    }, '+ 동반자 추가'));
+
+    if (roster.length) {
+      var quick = U.el('div', { class: 'chiprow mt8' });
+      roster.slice(0, 12).forEach(function (n) {
+        var used = NS.partners.indexOf(n) >= 0;
+        quick.appendChild(U.el('button', {
+          class: 'chip' + (used ? ' on' : ''),
+          onclick: function () {
+            var at = NS.partners.indexOf(n);
+            if (at >= 0) { NS.partners[at] = ''; }
+            else {
+              var empty = NS.partners.indexOf('');
+              if (empty >= 0) NS.partners[empty] = n; else NS.partners.push(n);
+            }
+            App.render();
+          }
+        }, n));
+      });
+      wrap.appendChild(U.el('div', {}, [
+        U.el('div', { class: 'tiny mt12', text: '자주 치는 분 (눌러서 추가)' }), quick
+      ]));
+    }
+    return wrap;
+  }
 
   // 아이언샷 기록용 선택지
   var LIES = [['fairway', '페어웨이'], ['rough', '러프'], ['bunker', '벙커']];
@@ -249,12 +308,9 @@
           U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '날씨' }),
           weatherSeg
         ]),
-        U.el('label', { class: 'field' }, [
-          U.el('span', { text: '동반자' }),
-          U.el('input', {
-            type: 'text', value: NS.partners, placeholder: '예: 김부장, 이과장, 박사장',
-            oninput: function (e) { NS.partners = e.target.value; }
-          })
+        U.el('div', { class: 'field' }, [
+          U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '동반자' }),
+          partnerInputs()
         ]),
         U.el('label', { class: 'field', style: 'margin-bottom:0' }, [
           U.el('span', { text: '메모 (선택)' }),
@@ -271,6 +327,7 @@
     body.appendChild(U.el('button', {
       class: 'primary full', disabled: !canStart,
       onclick: function () {
+        Store.rememberPartners(NS.partners);
         var r = Store.createRound({
           kind: NS.kind, courseId: NS.courseId, nineIds: NS.nineIds,
           tee: NS.tee, date: NS.date,
@@ -278,7 +335,7 @@
         });
         if (r) {
           NS.courseId = null; NS.nineIds = []; NS.q = '';
-          NS.weather = ''; NS.partners = ''; NS.memo = '';
+          NS.weather = ''; NS.partners = ['', '', '']; NS.memo = '';
           App.go('play/' + r.id + '/0');
         }
       }
@@ -781,7 +838,7 @@
         ]),
         U.el('div', { class: 'mt8', style: 'font-size:18px;font-weight:700', text: round.courseName }),
         U.el('div', { class: 'muted sm', text: U.fmtDate(round.date) + ' · ' + round.nineNames.join(' + ') + (round.weather ? ' · ' + round.weather : '') }),
-        round.partners ? U.el('div', { class: 'muted sm mt8', text: '동반자: ' + round.partners }) : null,
+        (round.partners && round.partners.length) ? U.el('div', { class: 'muted sm mt8', text: '동반자: ' + round.partners.map(function (n, i) { return (i + 1) + '. ' + n; }).join('  ') }) : null,
         round.memo ? U.el('div', { class: 'muted sm', text: '메모: ' + round.memo }) : null
       ]),
       U.el('div', { class: 'tiles' }, [

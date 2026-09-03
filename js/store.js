@@ -45,6 +45,7 @@
       },
       clubs: JSON.parse(JSON.stringify(DEFAULT_CLUBS)),
       courses: [],            // 기본 데이터 + 사용자 추가/수정본
+      partnerRoster: [],      // 여태 입력한 동반자 이름 모음 (자동완성 -> 표기 흔들림 방지)
       holeNotes: {},          // "courseId|nineId|holeNo" -> 나만의 공략 메모
       rounds: [],
       activeRoundId: null,
@@ -87,9 +88,14 @@
     if (!Array.isArray(state.courses)) state.courses = [];
     if (!Array.isArray(state.rounds)) state.rounds = [];
     if (!state.holeNotes) state.holeNotes = {};
+    if (!Array.isArray(state.partnerRoster)) state.partnerRoster = [];
     // 예전에 기록한 라운드에도 새로 생긴 항목을 채워 준다
     state.rounds.forEach(function (r) {
-      if (r.partners === undefined) r.partners = '';
+      // 동반자는 예전에 한 줄 문자열이었다 -> 이름 배열로 바꾼다 (통계를 이름 단위로 내기 위함)
+      if (typeof r.partners === 'string') {
+        r.partners = r.partners.split(/[,،·/]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      }
+      if (!Array.isArray(r.partners)) r.partners = [];
       if (r.weather === undefined) r.weather = '';
       (r.holes || []).forEach(function (h) {
         if (!Array.isArray(h.approaches)) h.approaches = [];
@@ -305,7 +311,7 @@
         teeName: teeDef ? teeDef.name : opts.tee,
         unit: S.unit(),
         weather: opts.weather || '',
-        partners: opts.partners || '',
+        partners: S.cleanPartners(opts.partners),
         memo: opts.memo || '',
         holes: holes,
         done: false,
@@ -316,6 +322,44 @@
       st.activeRoundId = round.id;
       save();
       return round;
+    },
+
+    /* 동반자 이름 정리.
+       통계를 이름 단위로 내려면 표기가 일정해야 하므로 앞뒤 공백과 중복을 없앤다.
+       (같은 사람을 "김부장" / "김 부장" 으로 적으면 다른 사람으로 잡히기 때문에
+        입력 화면에서는 여태 쓴 이름을 자동완성으로 띄워 준다) */
+    cleanPartners: function (list) {
+      if (typeof list === 'string') list = list.split(/[,،·/]+/);
+      if (!Array.isArray(list)) return [];
+      var seen = {}, out = [];
+      list.forEach(function (raw) {
+        var name = String(raw === null || raw === undefined ? '' : raw).trim().replace(/\s+/g, ' ');
+        if (!name) return;
+        var key = name.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(name);
+      });
+      return out;
+    },
+    partnerRoster: function () {
+      return S.get().partnerRoster.slice().sort(function (a, b) { return a.localeCompare(b, 'ko'); });
+    },
+    rememberPartners: function (names) {
+      var st = S.get();
+      var have = {};
+      st.partnerRoster.forEach(function (n) { have[n.toLowerCase()] = true; });
+      var added = 0;
+      S.cleanPartners(names).forEach(function (n) {
+        if (!have[n.toLowerCase()]) { st.partnerRoster.push(n); have[n.toLowerCase()] = true; added++; }
+      });
+      if (added) save();
+      return added;
+    },
+    removeFromRoster: function (name) {
+      var st = S.get();
+      st.partnerRoster = st.partnerRoster.filter(function (n) { return n !== name; });
+      save();
     },
 
     setActiveRound: function (id) { S.get().activeRoundId = id; save(); },

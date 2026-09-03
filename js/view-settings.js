@@ -151,7 +151,7 @@
         var clubs = h.shots.map(function (id) { var c = Store.club(id); return c ? (c.short || c.name) : '?'; });
         rows.push([
           r.date, r.kind === 'screen' ? '스크린' : '필드', r.courseName, h.nineName, r.teeName,
-          r.weather || '', r.partners || '',
+          r.weather || '', (r.partners || []).join(', '),
           h.no, h.par, U.toDisplay(h.dist, unit),
           h.score || '', h.score ? (h.score - h.par) : '', (typeof h.putts === 'number' ? h.putts : ''),
           clubs[0] || '', clubs.join(' '),

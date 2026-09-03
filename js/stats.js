@@ -24,6 +24,7 @@
       full18: [],      // 18홀 완주 라운드의 총타수
       trend: [],       // {date, score, toPar, courseName}
       byCourse: {},    // courseId -> {name, n, sum, par}
+      byPartner: {},   // 동반자 이름 -> {n, sum, best}
       byClub: {},      // clubId -> {n, sumToPar, holes}
       approach: {      // 아이언샷(그린 공략) 분석
         n: 0,
@@ -119,6 +120,17 @@
       if (played >= 18) {
         bc.n++; bc.sum += strokes; bc.par += parSum;
         if (bc.best === null || strokes < bc.best) bc.best = strokes;
+      }
+
+      // 동반자별 집계 (누구와 칠 때 스코어가 좋은지)
+      if (played >= 18) {
+        (r.partners || []).forEach(function (name) {
+          if (!name) return;
+          var bp = s.byPartner[name] || (s.byPartner[name] = { n: 0, sum: 0, best: null, lastDate: '' });
+          bp.n++; bp.sum += strokes;
+          if (bp.best === null || strokes < bp.best) bp.best = strokes;
+          if (r.date > bp.lastDate) bp.lastDate = r.date;
+        });
       }
     });
 
