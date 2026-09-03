@@ -24,7 +24,13 @@
       full18: [],      // 18홀 완주 라운드의 총타수
       trend: [],       // {date, score, toPar, courseName}
       byCourse: {},    // courseId -> {name, n, sum, par}
-      byClub: {}       // clubId -> {n, sumToPar, holes}
+      byClub: {},      // clubId -> {n, sumToPar, holes}
+      approach: {      // 아이언샷(그린 공략) 분석
+        n: 0,
+        results: { green: 0, left: 0, right: 0, short: 0, long: 0 },
+        lies: { fairway: { n: 0, green: 0 }, rough: { n: 0, green: 0 }, bunker: { n: 0, green: 0 } },
+        byClub: {}     // clubId -> {n, green, short, long, left, right}
+      }
     };
 
     rounds.forEach(function (r) {
@@ -66,6 +72,25 @@
         s.ob += (h.penalty && h.penalty.ob) || 0;
         s.hazard += (h.penalty && h.penalty.hazard) || 0;
         s.bunker += h.bunker || 0;
+
+        // 아이언샷 집계
+        (h.approaches || []).forEach(function (a) {
+          var ap = s.approach;
+          ap.n++;
+          if (ap.lies[a.lie]) {
+            ap.lies[a.lie].n++;
+            if ((a.results || []).indexOf('green') >= 0) ap.lies[a.lie].green++;
+          }
+          var bc = null;
+          if (a.clubId) {
+            bc = ap.byClub[a.clubId] || (ap.byClub[a.clubId] = { n: 0, green: 0, short: 0, long: 0, left: 0, right: 0 });
+            bc.n++;
+          }
+          (a.results || []).forEach(function (r) {
+            if (ap.results[r] !== undefined) ap.results[r]++;
+            if (bc && bc[r] !== undefined) bc[r]++;
+          });
+        });
 
         // 티샷 클럽별 성적
         if (h.shots && h.shots.length) {
@@ -230,7 +255,46 @@
       }
     }
 
-    // 7) 더블보기 이상
+    // 7) 아이언샷 경향 (기록이 10개 이상 쌓였을 때만)
+    var ap = s.approach;
+    if (ap.n >= 10) {
+      var missShort = ap.results.short, missLong = ap.results.long;
+      var missLeft = ap.results.left, missRight = ap.results.right;
+      if (missShort + missLong >= 4 && missShort >= missLong * 2) {
+        out.push({
+          level: 'high', title: '아이언샷이 계속 짧습니다',
+          detail: '아이언샷 ' + ap.n + '회 중 짧음 ' + missShort + '회 / 오버 ' + missLong + '회.',
+          action: '설정 > 내 클럽 거리를 10~15' + U.unitLabel(Store.unit()) + ' 낮추거나, 코스에서 한 클럽 길게 잡으세요. 이것만 고쳐도 파온율이 올라갑니다.'
+        });
+      } else if (missLong >= 4 && missLong >= missShort * 2) {
+        out.push({
+          level: 'mid', title: '아이언샷이 그린을 넘어갑니다',
+          detail: '아이언샷 ' + ap.n + '회 중 오버 ' + missLong + '회 / 짧음 ' + missShort + '회.',
+          action: '클럽 거리가 실제보다 짧게 입력돼 있을 수 있습니다. 런을 뺀 캐리 거리로 다시 확인하세요.'
+        });
+      }
+      if (missLeft + missRight >= 6 && Math.abs(missLeft - missRight) >= (missLeft + missRight) * 0.6) {
+        var side = missLeft > missRight ? '좌측' : '우측';
+        out.push({
+          level: 'mid', title: '아이언샷이 한쪽으로 쏠립니다',
+          detail: '좌측 미스 ' + missLeft + '회 / 우측 미스 ' + missRight + '회 — ' + side + '으로 치우칩니다.',
+          action: '핀을 바로 보지 말고 그린 ' + (side === '좌측' ? '우측' : '좌측') + ' 가장자리를 겨냥하면 그린에 남는 확률이 올라갑니다.'
+        });
+      }
+      var rough = ap.lies.rough, fw = ap.lies.fairway;
+      if (rough.n >= 6 && fw.n >= 6) {
+        var rp = U.pct(rough.green, rough.n), fp = U.pct(fw.green, fw.n);
+        if (fp - rp >= 25) {
+          out.push({
+            level: 'mid', title: '러프에서 그린 적중이 급격히 떨어집니다',
+            detail: '페어웨이에서 ' + fp + '% / 러프에서 ' + rp + '%.',
+            action: '러프에서는 그린을 직접 노리지 말고 한 클럽 길게 잡아 그린 앞에 떨어뜨리세요.'
+          });
+        }
+      }
+    }
+
+    // 8) 더블보기 이상
     var bad = s.byScore.double + s.byScore.triplePlus;
     if (s.holes >= 18 && (bad / s.holes) >= 0.28) {
       out.push({

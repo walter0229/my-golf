@@ -87,6 +87,15 @@
     if (!Array.isArray(state.courses)) state.courses = [];
     if (!Array.isArray(state.rounds)) state.rounds = [];
     if (!state.holeNotes) state.holeNotes = {};
+    // 예전에 기록한 라운드에도 새로 생긴 항목을 채워 준다
+    state.rounds.forEach(function (r) {
+      if (r.partners === undefined) r.partners = '';
+      if (r.weather === undefined) r.weather = '';
+      (r.holes || []).forEach(function (h) {
+        if (!Array.isArray(h.approaches)) h.approaches = [];
+        if (!h.penalty) h.penalty = { ob: 0, hazard: 0 };
+      });
+    });
   }
 
   // 기본 골프장 데이터를 넣는다. 이미 있는 id는 사용자가 고쳤을 수 있으므로 건드리지 않는다.
@@ -264,9 +273,12 @@
             dist: Math.round(h.dist * factor), // 미터
             score: null,
             putts: null,
-            shots: [],          // 클럽 id 배열 (퍼팅 제외)
+            shots: [],          // 클럽 id 배열 (퍼팅 제외). 같은 클럽을 두 번 쓰면 두 번 들어간다
             fairway: null,      // 'hit' | 'left' | 'right' | null
             gir: null,          // true | false | null
+            /* 아이언샷(그린을 노린 샷) 기록.
+               {dist: 남은거리(m), lie: 'fairway'|'rough'|'bunker', clubId, results: ['left','short',...]} */
+            approaches: [],
             penalty: { ob: 0, hazard: 0 },
             bunker: 0,
             memo: ''
@@ -293,6 +305,7 @@
         teeName: teeDef ? teeDef.name : opts.tee,
         unit: S.unit(),
         weather: opts.weather || '',
+        partners: opts.partners || '',
         memo: opts.memo || '',
         holes: holes,
         done: false,

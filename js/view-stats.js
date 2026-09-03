@@ -159,6 +159,30 @@
       U.el('h2', { text: '실력 향상 포인트' }), dbox
     ]));
 
+    // 아이언샷 분석
+    if (s.approach.n > 0) {
+      var ap = s.approach;
+      var apBox = U.el('div', { class: 'card' }, [
+        distBar('온그린', ap.results.green, ap.n, '#3ddc84'),
+        distBar('짧음', ap.results.short, ap.n, '#ff8f8f'),
+        distBar('오버', ap.results.long, ap.n, '#ffd166'),
+        distBar('좌측 미스', ap.results.left, ap.n, '#5aa9e6'),
+        distBar('우측 미스', ap.results.right, ap.n, '#b98fe6')
+      ]);
+      var lieRow = U.el('div', { class: 'tiles mt8' });
+      [['fairway', '페어웨이에서'], ['rough', '러프에서'], ['bunker', '벙커에서']].forEach(function (l) {
+        var d = ap.lies[l[0]];
+        lieRow.appendChild(App.tile(
+          d.n ? U.pct(d.green, d.n) + '%' : '-', l[1], d.green + '/' + d.n + ' 온그린'
+        ));
+      });
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '아이언샷 분석 (' + ap.n + '샷)' }),
+        apBox, lieRow,
+        U.el('div', { class: 'tiny mt8', text: '짧음이 오버보다 훨씬 많으면 클럽 거리가 과대 입력된 것입니다. 설정에서 낮춰 보세요.' })
+      ]));
+    }
+
     // 클럽별
     var clubIds = Object.keys(s.byClub);
     if (clubIds.length) {

@@ -2,8 +2,22 @@
 (function (g) {
   'use strict';
 
-  // 새 라운드 화면의 임시 선택 상태
-  var NS = { kind: 'field', courseId: null, nineIds: [], tee: null, date: null, q: '' };
+  // 새 라운드 화면의 임시 선택 상태 (화면이 다시 그려져도 입력값이 날아가지 않도록 여기 담아 둔다)
+  var NS = {
+    kind: 'field', courseId: null, nineIds: [], tee: null, date: null, q: '',
+    weather: '', partners: '', memo: ''
+  };
+
+  var WEATHERS = ['맑음', '흐림', '비', '바람', '더움', '추움'];
+
+  // 아이언샷 기록용 선택지
+  var LIES = [['fairway', '페어웨이'], ['rough', '러프'], ['bunker', '벙커']];
+  var SHOT_RESULTS = [
+    ['green', '온그린'], ['left', '좌측 미스'], ['right', '우측 미스'],
+    ['short', '짧음'], ['long', '오버']
+  ];
+  function lieLabel(v) { var r = '-'; LIES.forEach(function (x) { if (x[0] === v) r = x[1]; }); return r; }
+  function resultLabel(v) { var r = v; SHOT_RESULTS.forEach(function (x) { if (x[0] === v) r = x[1]; }); return r; }
 
   function fmtDist(m) { return U.toDisplay(m, Store.unit()) + U.unitLabel(Store.unit()); }
 
@@ -215,7 +229,15 @@
     });
     body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '티박스' }), teeSeg]));
 
-    // 날짜 / 메모
+    // 날짜 / 날씨 / 동반자 / 메모
+    var weatherSeg = U.el('div', { class: 'seg', style: 'flex-wrap:wrap' });
+    WEATHERS.forEach(function (w) {
+      weatherSeg.appendChild(U.el('button', {
+        class: NS.weather === w ? 'on' : '', style: 'flex:1 0 30%',
+        onclick: function () { NS.weather = NS.weather === w ? '' : w; App.render(); }
+      }, w));
+    });
+
     body.appendChild(U.el('div', { class: 'section' }, [
       U.el('h2', { text: '라운드 정보' }),
       U.el('div', { class: 'card' }, [
@@ -223,9 +245,23 @@
           U.el('span', { text: '날짜' }),
           U.el('input', { type: 'date', value: NS.date, onchange: function (e) { NS.date = e.target.value; } })
         ]),
+        U.el('div', { class: 'field' }, [
+          U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '날씨' }),
+          weatherSeg
+        ]),
+        U.el('label', { class: 'field' }, [
+          U.el('span', { text: '동반자' }),
+          U.el('input', {
+            type: 'text', value: NS.partners, placeholder: '예: 김부장, 이과장, 박사장',
+            oninput: function (e) { NS.partners = e.target.value; }
+          })
+        ]),
         U.el('label', { class: 'field', style: 'margin-bottom:0' }, [
-          U.el('span', { text: '메모 (날씨, 동반자 등)' }),
-          U.el('input', { type: 'text', placeholder: '예: 맑음, 바람 강함', id: 'r-memo' })
+          U.el('span', { text: '메모 (선택)' }),
+          U.el('input', {
+            type: 'text', value: NS.memo, placeholder: '예: 오전 7시 티오프, 그린 빠름',
+            oninput: function (e) { NS.memo = e.target.value; }
+          })
         ])
       ])
     ]));
@@ -235,13 +271,14 @@
     body.appendChild(U.el('button', {
       class: 'primary full', disabled: !canStart,
       onclick: function () {
-        var memoEl = U.$('#r-memo');
         var r = Store.createRound({
           kind: NS.kind, courseId: NS.courseId, nineIds: NS.nineIds,
-          tee: NS.tee, date: NS.date, memo: memoEl ? memoEl.value : ''
+          tee: NS.tee, date: NS.date,
+          weather: NS.weather, partners: NS.partners, memo: NS.memo
         });
         if (r) {
           NS.courseId = null; NS.nineIds = []; NS.q = '';
+          NS.weather = ''; NS.partners = ''; NS.memo = '';
           App.go('play/' + r.id + '/0');
         }
       }
@@ -340,19 +377,30 @@
     var suggested = {};
     plan.steps.forEach(function (s) { if (s.club && !s.alt) suggested[s.club.id] = true; });
 
+    /* 클럽 버튼: 누를 때마다 사용 횟수가 0 → 1(초록) → 2(파랑) → 0(해제) 로 돈다.
+       누르는 즉시 스코어(샷 + 퍼팅 + 벌타)가 다시 계산된다. */
     var grid = U.el('div', { class: 'clubgrid' });
     Store.clubs().forEach(function (c) {
       if (c.cat === 'putter') return;
-      var used = hole.shots.indexOf(c.id) >= 0;
+      var count = 0;
+      hole.shots.forEach(function (id) { if (id === c.id) count++; });
       grid.appendChild(U.el('button', {
-        class: (suggested[c.id] ? 'sug' : '') + (used ? ' used' : ''),
+        class: (suggested[c.id] ? 'sug' : '') + (count === 1 ? ' used1' : count >= 2 ? ' used2' : ''),
         onclick: function () {
-          hole.shots.push(c.id);
+          if (count >= 2) {
+            hole.shots = hole.shots.filter(function (id) { return id !== c.id; });  // 세 번째 누르면 해제
+          } else {
+            hole.shots.push(c.id);
+          }
           recalc(hole);
           Store.save();
           App.go('play/' + roundId + '/' + idx);
         }
-      }, [c.short || c.name, U.el('span', { class: 'd', text: c.dist ? fmtDist(c.dist) : '' })]));
+      }, [
+        c.short || c.name,
+        count ? U.el('span', { class: 'cnt', text: '×' + count }) : null,
+        U.el('span', { class: 'd', text: c.dist ? fmtDist(c.dist) : '' })
+      ]));
     });
 
     var shotList = U.el('div', { class: 'shotlist' });
@@ -373,8 +421,17 @@
     });
 
     body.appendChild(U.el('div', { class: 'section' }, [
-      U.el('h2', { text: '사용한 클럽 (퍼팅 제외 · 누르면 추가, 칩을 누르면 삭제)' }),
-      U.el('div', { class: 'card' }, [grid, shotList])
+      U.el('h2', { text: '사용한 클럽 (퍼팅 제외)' }),
+      U.el('div', { class: 'card' }, [
+        U.el('div', { class: 'tiny mb8' }, [
+          '한 번 누르면 ',
+          U.el('b', { style: 'color:var(--green)', text: '1회(초록)' }),
+          ', 두 번 누르면 ',
+          U.el('b', { style: 'color:var(--blue)', text: '2회(파랑)' }),
+          ', 세 번 누르면 해제됩니다. 누르는 즉시 스코어가 계산됩니다.'
+        ]),
+        grid, shotList
+      ])
     ]));
 
     // --- 퍼팅 / 스코어 ---
@@ -478,7 +535,47 @@
     detail.appendChild(U.el('div', { class: 'mb8', style: 'font-size:13px;color:var(--fg2)', text: '벌타 / 벙커' }));
     detail.appendChild(penRow);
 
-    body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '샷 결과' }), detail]));
+    body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '티샷 결과 / 파온 / 벌타' }), detail]));
+
+    // --- 아이언샷 (그린을 노린 샷) ---
+    if (!Array.isArray(hole.approaches)) hole.approaches = [];
+    var apBox = U.el('div', { class: 'card' });
+    apBox.appendChild(U.el('div', { class: 'tiny mb8', text: '그린을 노리고 친 샷을 기록하면, 파온을 놓친 원인이 거리인지 방향인지 통계로 알 수 있습니다.' }));
+
+    if (!hole.approaches.length) {
+      apBox.appendChild(U.el('div', { class: 'muted sm', text: '아직 기록된 아이언샷이 없습니다.' }));
+    }
+    hole.approaches.forEach(function (a, ai) {
+      var club = a.clubId ? Store.club(a.clubId) : null;
+      apBox.appendChild(U.el('div', {
+        class: 'aprow',
+        onclick: function () { editApproach(round, hole, ai, roundId, idx); }
+      }, [
+        U.el('div', { class: 'n', text: String(ai + 1) }),
+        U.el('div', { class: 'grow' }, [
+          U.el('div', { style: 'font-weight:600' }, [
+            (a.dist ? fmtDist(a.dist) : '거리 미입력') + ' · ' + (club ? club.name : '클럽 미선택')
+          ]),
+          U.el('div', { class: 'tiny' }, [
+            lieLabel(a.lie) + ' → ' + ((a.results && a.results.length) ? a.results.map(resultLabel).join(' + ') : '결과 미입력')
+          ])
+        ]),
+        U.el('button', {
+          class: 'sm ghost',
+          onclick: function (e) {
+            e.stopPropagation();
+            hole.approaches.splice(ai, 1); Store.save(); App.go('play/' + roundId + '/' + idx);
+          }
+        }, '×')
+      ]));
+    });
+
+    apBox.appendChild(U.el('button', {
+      class: 'full mt12',
+      onclick: function () { editApproach(round, hole, -1, roundId, idx); }
+    }, '+ 아이언샷 기록 추가'));
+
+    body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '아이언샷 (그린 공략)' }), apBox]));
 
     // --- 홀 메모 ---
     body.appendChild(U.el('div', { class: 'section' }, [
@@ -552,6 +649,109 @@
     setTimeout(function () { ta.focus(); }, 50);
   }
 
+  /* 아이언샷 기록 입력/수정.
+     ai 가 -1 이면 새로 추가, 아니면 그 인덱스를 수정한다.
+     결과는 두 개까지 고를 수 있다 (예: "짧음 + 좌측 미스"). */
+  function editApproach(round, hole, ai, roundId, idx) {
+    var unit = Store.unit();
+    var isNew = ai < 0;
+    var src = isNew ? { dist: null, lie: 'fairway', clubId: null, results: [] } : hole.approaches[ai];
+    var draft = {
+      dist: src.dist,
+      lie: src.lie || 'fairway',
+      clubId: src.clubId || null,
+      results: (src.results || []).slice()
+    };
+
+    var box = U.el('div');
+
+    function redraw() {
+      box.innerHTML = '';
+
+      // 남은 거리
+      box.appendChild(U.el('label', { class: 'field' }, [
+        U.el('span', { text: '그린까지 남은 거리 (' + U.unitLabel(unit) + ')' }),
+        U.el('input', {
+          type: 'number', inputmode: 'numeric', class: 'num',
+          value: draft.dist ? U.toDisplay(draft.dist, unit) : '',
+          placeholder: '예: 140',
+          oninput: function (e) { draft.dist = U.fromDisplay(e.target.value, unit); }
+        })
+      ]));
+
+      // 샷 지점
+      var lieSeg = U.el('div', { class: 'seg' });
+      LIES.forEach(function (l) {
+        lieSeg.appendChild(U.el('button', {
+          class: draft.lie === l[0] ? 'on' : '',
+          onclick: function () { draft.lie = l[0]; redraw(); }
+        }, l[1]));
+      });
+      box.appendChild(U.el('div', { class: 'field' }, [
+        U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '샷 지점' }),
+        lieSeg
+      ]));
+
+      // 사용한 클럽
+      var cg = U.el('div', { class: 'clubgrid' });
+      Store.clubs().forEach(function (c) {
+        if (c.cat === 'putter') return;
+        cg.appendChild(U.el('button', {
+          class: draft.clubId === c.id ? 'used1' : '',
+          onclick: function () { draft.clubId = draft.clubId === c.id ? null : c.id; redraw(); }
+        }, [c.short || c.name, U.el('span', { class: 'd', text: c.dist ? fmtDist(c.dist) : '' })]));
+      });
+      box.appendChild(U.el('div', { class: 'field' }, [
+        U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '선택한 클럽' }),
+        cg
+      ]));
+
+      // 결과 (최대 2개)
+      var rg = U.el('div', { class: 'clubgrid' });
+      SHOT_RESULTS.forEach(function (r) {
+        var on = draft.results.indexOf(r[0]) >= 0;
+        rg.appendChild(U.el('button', {
+          class: on ? 'used1' : '',
+          onclick: function () {
+            var i = draft.results.indexOf(r[0]);
+            if (i >= 0) draft.results.splice(i, 1);
+            else if (draft.results.length < 2) draft.results.push(r[0]);
+            else draft.results = [draft.results[1], r[0]];   // 2개를 넘으면 오래된 것부터 밀어낸다
+            redraw();
+          }
+        }, r[1]));
+      });
+      box.appendChild(U.el('div', { class: 'field', style: 'margin-bottom:0' }, [
+        U.el('span', {
+          style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px',
+          text: '결과 (2개까지 · 예: 짧음 + 좌측 미스)'
+        }),
+        rg,
+        U.el('div', { class: 'tiny mt8', text: draft.results.length ? '선택: ' + draft.results.map(resultLabel).join(' + ') : '선택 안 함' })
+      ]));
+    }
+    redraw();
+
+    var m = App.modal(
+      (idx + 1) + '번홀 (파' + hole.par + ') 아이언샷 ' + (isNew ? '기록' : '수정'),
+      box,
+      U.el('div', { class: 'btnrow mt16' }, [
+        U.el('button', { onclick: function () { m.close(); } }, '취소'),
+        U.el('button', {
+          class: 'primary',
+          onclick: function () {
+            if (isNew) hole.approaches.push(draft);
+            else hole.approaches[ai] = draft;
+            // 온그린을 골랐으면 파온 여부를 굳이 따로 누르지 않아도 되게 힌트를 준다
+            Store.save();
+            m.close();
+            App.go('play/' + roundId + '/' + idx);
+          }
+        }, '저장')
+      ])
+    );
+  }
+
   function finish(round) {
     var t = Store.totals(round);
     if (t.holesPlayed < round.holes.length) {
@@ -580,7 +780,9 @@
           round.done ? null : U.el('span', { class: 'badge live', text: '미완료' })
         ]),
         U.el('div', { class: 'mt8', style: 'font-size:18px;font-weight:700', text: round.courseName }),
-        U.el('div', { class: 'muted sm', text: U.fmtDate(round.date) + ' · ' + round.nineNames.join(' + ') + (round.memo ? ' · ' + round.memo : '') })
+        U.el('div', { class: 'muted sm', text: U.fmtDate(round.date) + ' · ' + round.nineNames.join(' + ') + (round.weather ? ' · ' + round.weather : '') }),
+        round.partners ? U.el('div', { class: 'muted sm mt8', text: '동반자: ' + round.partners }) : null,
+        round.memo ? U.el('div', { class: 'muted sm', text: '메모: ' + round.memo }) : null
       ]),
       U.el('div', { class: 'tiles' }, [
         App.tile(t.strokes, '총 타수', U.sign(t.toPar)),

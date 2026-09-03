@@ -1,22 +1,22 @@
 /* 서비스 워커: 필드에서 인터넷이 안 터져도 앱이 열리도록 파일을 캐시해 둔다.
    앱 파일을 수정했다면 아래 CACHE 이름의 숫자를 올려야 새 버전이 적용된다. */
-var CACHE = 'golf-score-v3';
+var CACHE = 'golf-score-v4';
 var FILES = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
-  './css/style.css',
-  './js/util.js',
-  './js/courses.js',
-  './js/store.js',
-  './js/strategy.js',
-  './js/stats.js',
-  './js/app.js',
-  './js/view-round.js',
-  './js/view-stats.js',
-  './js/view-settings.js',
-  './js/sheets.js'
+  './css/style.css?v=4',
+  './js/util.js?v=4',
+  './js/courses.js?v=4',
+  './js/store.js?v=4',
+  './js/strategy.js?v=4',
+  './js/stats.js?v=4',
+  './js/app.js?v=4',
+  './js/view-round.js?v=4',
+  './js/view-stats.js?v=4',
+  './js/view-settings.js?v=4',
+  './js/sheets.js?v=4'
 ];
 
 self.addEventListener('install', function (e) {

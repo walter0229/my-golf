@@ -103,6 +103,25 @@
     return { el: bg, close: close };
   };
 
+  // 아이언샷 기록을 한 줄 텍스트로 (CSV / 구글 시트 내보내기용)
+  var LIE_KO = { fairway: '페어웨이', rough: '러프', bunker: '벙커' };
+  var RESULT_KO = { green: '온그린', left: '좌측미스', right: '우측미스', short: '짧음', long: '오버' };
+  App.LIE_KO = LIE_KO;
+  App.RESULT_KO = RESULT_KO;
+  App.approachText = function (hole) {
+    if (!hole.approaches || !hole.approaches.length) return '';
+    var unit = Store.unit();
+    return hole.approaches.map(function (a) {
+      var c = a.clubId ? Store.club(a.clubId) : null;
+      return [
+        a.dist ? U.toDisplay(a.dist, unit) + U.unitLabel(unit) : '?',
+        LIE_KO[a.lie] || '?',
+        c ? (c.short || c.name) : '?',
+        (a.results || []).map(function (r) { return RESULT_KO[r] || r; }).join('+') || '?'
+      ].join('/');
+    }).join(' | ');
+  };
+
   App.kindBadge = function (kind) {
     return U.el('span', { class: 'badge ' + kind, text: kind === 'screen' ? '스크린' : '필드' });
   };

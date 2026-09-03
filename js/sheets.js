@@ -95,20 +95,22 @@
   // 홀 단위 데이터
   function holeRows() {
     var unit = Store.unit();
-    var rows = [['날짜', '구분', '골프장', '코스', '티', '홀', '파', '거리(' + U.unitLabel(unit) + ')',
-      '스코어', '파대비', '퍼팅', '티샷클럽', '사용클럽', '페어웨이', '파온', 'OB', '해저드', '벙커', '메모']];
+    var rows = [['날짜', '구분', '골프장', '코스', '티', '날씨', '동반자', '홀', '파', '거리(' + U.unitLabel(unit) + ')',
+      '스코어', '파대비', '퍼팅', '티샷클럽', '사용클럽', '페어웨이', '파온',
+      '아이언샷', 'OB', '해저드', '벙커', '메모']];
     Store.rounds().forEach(function (r) {
       r.holes.forEach(function (h) {
         if (!h.score && typeof h.putts !== 'number') return;
         var clubs = h.shots.map(function (id) { var c = Store.club(id); return c ? (c.short || c.name) : '?'; });
         rows.push([
           r.date, r.kind === 'screen' ? '스크린' : '필드', r.courseName, h.nineName, r.teeName,
+          r.weather || '', r.partners || '',
           h.no, h.par, U.toDisplay(h.dist, unit),
           h.score || '', h.score ? (h.score - h.par) : '', (typeof h.putts === 'number' ? h.putts : ''),
           clubs[0] || '', clubs.join(' '),
           h.fairway === 'hit' ? '페어웨이' : h.fairway === 'left' ? '좌' : h.fairway === 'right' ? '우' : '',
           h.gir === true ? 'O' : h.gir === false ? 'X' : '',
-          h.penalty.ob || 0, h.penalty.hazard || 0, h.bunker || 0, h.memo || ''
+          App.approachText(h), h.penalty.ob || 0, h.penalty.hazard || 0, h.bunker || 0, h.memo || ''
         ]);
       });
     });
@@ -117,13 +119,14 @@
 
   // 라운드 요약
   function roundRows() {
-    var rows = [['날짜', '구분', '골프장', '코스', '티', '홀수', '총타수', '파대비', '퍼팅',
+    var rows = [['날짜', '구분', '골프장', '코스', '티', '날씨', '동반자', '홀수', '총타수', '파대비', '퍼팅',
       '파온율(%)', '페어웨이(%)', '버디이상', '파', '보기', '더블이상', '3퍼트', 'OB', '해저드', '메모']];
     Store.rounds().forEach(function (r) {
       var t = Store.totals(r);
       if (!t.holesPlayed) return;
       rows.push([
         r.date, r.kind === 'screen' ? '스크린' : '필드', r.courseName, r.nineNames.join('+'), r.teeName,
+        r.weather || '', r.partners || '',
         t.holesPlayed, t.strokes, t.toPar, t.putts,
         U.pct(t.gir, t.girChance) || 0, U.pct(t.fwHit, t.fwChance) || 0,
         t.birdieOrBetter, t.par, t.bogey, t.doubleOrWorse, t.threePutt, t.ob, t.hazard, r.memo || ''
