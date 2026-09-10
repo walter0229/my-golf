@@ -54,7 +54,8 @@
         })(),
         U.el('div', { class: 'tiny mt8', text: Voice.supported()
           ? '음성 인식은 인터넷 연결이 필요합니다. 신호가 없는 홀에서는 손으로 입력해 주세요.'
-          : '이 브라우저는 음성 인식을 지원하지 않습니다. 안드로이드 크롬에서 사용해 주세요.' })
+          : '이 브라우저는 음성 인식을 지원하지 않습니다. 안드로이드 크롬에서 사용해 주세요.' }),
+        U.el('button', { class: 'ghost sm full mt8', onclick: function () { VoiceUI.tester(); } }, '인식 테스트 (말투가 잡히는지 확인)')
       ]),
       U.el('label', { class: 'field', style: 'margin-bottom:0' }, [
         U.el('span', { text: '목표 스코어 (홀별 목표 타수 계산에 사용)' }),

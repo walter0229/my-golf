@@ -151,5 +151,59 @@
     listen();
   }
 
-  g.VoiceUI = { open: open, close: close };
+  /* 인식 테스트 — 필드에 나가기 전에 내 말투가 잡히는지 확인해 보는 화면.
+     음성으로도, 글자로도 넣어 볼 수 있고 실제 기록에는 저장하지 않는다. */
+  function tester() {
+    var fake = { par: 4, no: 1, approaches: [], penalty: { ob: 0, hazard: 0 }, shots: [], bunker: 0 };
+    var input = el('input', { type: 'text', placeholder: '예: 드라이버 7번 아이언 온그린 투펏 파' });
+    var out = el('div', { class: 'vresult' });
+    var micBtn = el('button', { class: 'sm', style: 'width:auto' }, '🎤 말해서 넣기');
+
+    function run(txt) {
+      input.value = txt;
+      out.innerHTML = '';
+      if (!txt.trim()) return;
+      var h = JSON.parse(JSON.stringify(fake));
+      var res = Voice.parse(txt, h, Store.unit());
+      Voice.apply(res, h);
+      if (!res.labels.length) {
+        out.appendChild(el('div', { class: 'verr', text: '이 문장은 알아듣지 못했습니다. 어떤 표현이 안 잡히는지 알려주시면 사전에 추가하겠습니다.' }));
+        return;
+      }
+      var list = el('div', { class: 'vlist' });
+      res.labels.forEach(function (l) { list.appendChild(el('div', { class: 'vitem', text: '✓ ' + l })); });
+      out.appendChild(list);
+      out.appendChild(el('div', { class: 'vscore', text: '파4 기준 스코어 ' + (h.score || '-') + '타' }));
+    }
+
+    input.addEventListener('input', function () { run(input.value); });
+    micBtn.addEventListener('click', function () {
+      out.innerHTML = '';
+      input.value = '';
+      Voice.start({
+        listening: function () { micBtn.textContent = '🔴 듣는 중...'; },
+        interim: function (t) { input.value = t; },
+        error: function (m) { micBtn.textContent = '🎤 말해서 넣기'; out.innerHTML = ''; out.appendChild(el('div', { class: 'verr', text: m })); },
+        end: function (t) { micBtn.textContent = '🎤 말해서 넣기'; if (t) run(t); }
+      });
+    });
+
+    var ex = el('div', { class: 'vex' }, [el('div', { class: 'tiny mb8', text: '예시 (눌러서 넣기)' })]);
+    EXAMPLES.concat(['드라이버 우드 투펏 보기', '오비 하나 양파']).forEach(function (x) {
+      ex.appendChild(el('button', {
+        class: 'chip', style: 'margin:3px 4px 3px 0',
+        onclick: function () { run(x); }
+      }, x));
+    });
+
+    App.modal('음성 인식 테스트', el('div', {}, [
+      el('div', { class: 'tiny mb8', text: '실제 기록에는 저장되지 않습니다. 평소 쓰시는 말투가 잡히는지 확인해 보세요.' }),
+      input,
+      el('div', { class: 'mt8' }, [micBtn]),
+      out,
+      ex
+    ]));
+  }
+
+  g.VoiceUI = { open: open, close: close, tester: tester };
 })(window);
