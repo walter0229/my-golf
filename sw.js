@@ -1,25 +1,26 @@
 /* 서비스 워커: 필드에서 인터넷이 안 터져도 앱이 열리도록 파일을 캐시해 둔다.
    앱 파일을 수정했다면 아래 CACHE 이름의 숫자를 올려야 새 버전이 적용된다. */
-var CACHE = 'golf-score-v13';
+var CACHE = 'golf-score-v16';
 var FILES = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
-  './css/style.css?v=13',
-  './js/util.js?v=13',
-  './js/courses-north.js?v=13',
-  './js/courses.js?v=13',
-  './js/store.js?v=13',
-  './js/strategy.js?v=13',
-  './js/stats.js?v=13',
-  './js/app.js?v=13',
-  './js/voice.js?v=13',
-  './js/view-round.js?v=13',
-  './js/view-stats.js?v=13',
-  './js/view-settings.js?v=13',
-  './js/sheets.js?v=13',
-  './js/voice-ui.js?v=13'
+  './css/style.css?v=16',
+  './js/util.js?v=16',
+  './js/courses-north.js?v=16',
+  './js/courses.js?v=16',
+  './js/store.js?v=16',
+  './js/strategy.js?v=16',
+  './js/stats.js?v=16',
+  './js/app.js?v=16',
+  './js/voice.js?v=16',
+  './js/shot.js?v=16',
+  './js/view-round.js?v=16',
+  './js/view-stats.js?v=16',
+  './js/view-settings.js?v=16',
+  './js/sheets.js?v=16',
+  './js/voice-ui.js?v=16'
 ];
 
 self.addEventListener('install', function (e) {

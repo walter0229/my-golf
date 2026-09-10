@@ -159,6 +159,39 @@
       U.el('h2', { text: '실력 향상 포인트' }), dbox
     ]));
 
+    // 타구질 (샷 단위 기록이 있을 때만)
+    if (s.contactTotal > 0) {
+      var order = ['solid', 'fat', 'thin', 'push', 'pull', 'slice', 'hook', 'shank', 'toe', 'heel'];
+      var colors = { solid: '#3ddc84', fat: '#ff8f8f', thin: '#ffd166', push: '#5aa9e6',
+                     pull: '#b98fe6', slice: '#61b0f0', hook: '#ff8fab', shank: '#c94b4b',
+                     toe: '#9db3a8', heel: '#9db3a8' };
+      var cBox = U.el('div', { class: 'card' });
+      order.forEach(function (k) {
+        if (!s.contact[k]) return;
+        cBox.appendChild(distBar(Shot.contactName(k), s.contact[k], s.contactTotal, colors[k] || '#9db3a8'));
+      });
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '타구질 (' + s.contactTotal + '샷)' }),
+        cBox,
+        U.el('div', { class: 'tiny mt8', text: '음성으로 "정타 / 뒷땅 / 뱀샷 / 밀림" 처럼 말한 샷만 집계됩니다.' })
+      ]));
+    }
+
+    // 퍼팅 상세 (샷 단위 기록이 있을 때만)
+    if (s.putt.n > 0) {
+      var pTiles = U.el('div', { class: 'tiles' }, [
+        App.tile(s.puttFirstAvg === null ? '-' : U.round1(s.puttFirstAvg) + 'm', '첫 퍼트 거리', '평균'),
+        App.tile(s.puttLeftAvg === null ? '-' : U.round1(s.puttLeftAvg) + 'm', '치고 남은 거리', '평균'),
+        App.tile(s.putt.short, '짧음', '길음 ' + s.putt.long),
+        App.tile(s.putt.left + s.putt.right, '방향 미스', '좌 ' + s.putt.left + ' / 우 ' + s.putt.right)
+      ]);
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '퍼팅 상세 (' + s.putt.n + '퍼트)' }),
+        pTiles,
+        U.el('div', { class: 'tiny mt8', text: '"8미터 퍼팅 짧아서 2미터 남음" 처럼 거리를 말한 퍼팅만 집계됩니다. 남은 거리가 1m 안쪽이면 3퍼트가 거의 없어집니다.' })
+      ]));
+    }
+
     // 아이언샷 분석
     if (s.approach.n > 0) {
       var ap = s.approach;

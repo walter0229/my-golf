@@ -26,6 +26,11 @@
       byCourse: {},    // courseId -> {name, n, sum, par}
       byPartner: {},   // 동반자 이름 -> {n, sum, best}
       byClub: {},      // clubId -> {n, sumToPar, holes}
+      contact: {},     // 타구질별 횟수 (정타/뒷땅/뱀샷/밀림...)
+      contactTotal: 0,
+      putt: {          // 퍼팅 상세 (음성으로 샷 단위 기록했을 때만 쌓인다)
+        n: 0, first: [], leftover: [], short: 0, long: 0, left: 0, right: 0, made: 0
+      },
       approach: {      // 아이언샷(그린 공략) 분석
         n: 0,
         results: { green: 0, left: 0, right: 0, short: 0, long: 0 },
@@ -73,6 +78,24 @@
         s.ob += (h.penalty && h.penalty.ob) || 0;
         s.hazard += (h.penalty && h.penalty.hazard) || 0;
         s.bunker += h.bunker || 0;
+
+        // 샷 단위 기록(음성)이 있으면 타구질과 퍼팅을 자세히 집계한다
+        (h.shotLog || []).forEach(function (sh, si) {
+          if (sh.contact) {
+            s.contact[sh.contact] = (s.contact[sh.contact] || 0) + 1;
+            s.contactTotal++;
+          }
+          if (sh.type === 'putt') {
+            s.putt.n++;
+            var firstPutt = !(h.shotLog[si - 1] && h.shotLog[si - 1].type === 'putt');
+            if (firstPutt && sh.remain) s.putt.first.push(sh.remain);
+            if (sh.leftover) s.putt.leftover.push(sh.leftover);
+            if (sh.end === 'hole') s.putt.made++;
+            (sh.miss || []).forEach(function (mm) {
+              if (s.putt[mm] !== undefined) s.putt[mm]++;
+            });
+          }
+        });
 
         // 아이언샷 집계
         (h.approaches || []).forEach(function (a) {
@@ -153,6 +176,8 @@
     s.avgPar4 = U.avg(s.dist[4]);
     s.avgPar5 = U.avg(s.dist[5]);
     s.recent5 = U.avg(s.full18.slice(-5));
+    s.puttFirstAvg = U.avg(s.putt.first);
+    s.puttLeftAvg = U.avg(s.putt.leftover);
 
     return s;
   }
@@ -263,6 +288,45 @@
           action: worst.p === 3 ? '파3는 티 높이와 클럽 선택 문제인 경우가 많습니다. 그린 중앙 공략으로 바꿔보세요.'
             : worst.p === 5 ? '파5에서 2온을 무리하게 노리고 있지는 않은지 확인하세요. 레이업 전략을 써보세요.'
               : '파4 세컨샷 거리(120~160m) 구간 연습이 필요합니다.'
+        });
+      }
+    }
+
+    // 6-2) 타구질 (음성으로 샷 단위 기록을 했을 때만)
+    if (s.contactTotal >= 15) {
+      var bad = (s.contact.fat || 0) + (s.contact.thin || 0);
+      if (bad / s.contactTotal >= 0.25) {
+        out.push({
+          level: 'high', title: '뒷땅·뱀샷이 전체 샷의 ' + U.pct(bad, s.contactTotal) + '%',
+          detail: '뒷땅 ' + (s.contact.fat || 0) + '회 / 뱀샷 ' + (s.contact.thin || 0) + '회 (기록한 ' + s.contactTotal + '샷 중).',
+          action: '스윙보다 셋업 문제일 때가 많습니다. 공 위치를 한 번 점검하고, 스윙을 크게 하기보다 정확히 맞히는 데 집중하세요.'
+        });
+      }
+      var sl = (s.contact.slice || 0) + (s.contact.push || 0);
+      var hk = (s.contact.hook || 0) + (s.contact.pull || 0);
+      if (sl + hk >= 8 && Math.abs(sl - hk) >= (sl + hk) * 0.6) {
+        out.push({
+          level: 'mid', title: sl > hk ? '오른쪽으로 나가는 구질이 굳어 있습니다' : '왼쪽으로 감기는 구질이 굳어 있습니다',
+          detail: '슬라이스·밀림 ' + sl + '회 / 훅·당김 ' + hk + '회.',
+          action: '고치기 전까지는 반대쪽을 겨냥해서 치는 편이 스코어에 유리합니다.'
+        });
+      }
+    }
+
+    // 6-3) 퍼팅 상세 (음성으로 샷 단위 기록을 했을 때만)
+    if (s.putt.n >= 20) {
+      if (s.putt.short + s.putt.long >= 6 && s.putt.short >= s.putt.long * 2) {
+        out.push({
+          level: 'high', title: '퍼팅이 계속 짧습니다',
+          detail: '짧음 ' + s.putt.short + '회 / 길음 ' + s.putt.long + '회. 홀에 못 미치면 절대 안 들어갑니다.',
+          action: '홀을 30~40cm 지나가는 세기로 치세요. 첫 퍼트가 홀을 지나가야 다음 퍼트도 짧아집니다.'
+        });
+      }
+      if (s.puttFirstAvg !== null && s.puttLeftAvg !== null && s.puttLeftAvg >= 1.5) {
+        out.push({
+          level: 'mid', title: '첫 퍼트 후 남는 거리가 깁니다',
+          detail: '첫 퍼트 평균 ' + U.round1(s.puttFirstAvg) + 'm 에서 치고, 평균 ' + U.round1(s.puttLeftAvg) + 'm 를 남깁니다.',
+          action: '1m 안에 붙이면 3퍼트가 거의 사라집니다. 롱퍼트는 방향보다 거리 연습이 먼저입니다.'
         });
       }
     }

@@ -649,7 +649,34 @@
 
     body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '아이언샷 (그린 공략)' }), apBox]));
 
-    // --- 음성으로 남긴 원문 ---
+    // --- 샷 기록 (음성으로 쌓은 샷 목록) ---
+    if (hole.shotLog && hole.shotLog.length) {
+      var slBox = U.el('div', { class: 'card' });
+      hole.shotLog.forEach(function (s, si) {
+        slBox.appendChild(U.el('div', { class: 'srow' }, [
+          U.el('div', { class: 'sn' + (s.type === 'putt' ? ' putt' : ''), text: String(si + 1) }),
+          U.el('div', { class: 'grow' }, [
+            U.el('div', { style: 'font-weight:600;font-size:14px', text: Shot.summary(s, Store.unit()) || '(내용 없음)' }),
+            U.el('div', { class: 'tiny', text: '"' + s.raw + '"' })
+          ]),
+          U.el('button', {
+            class: 'sm ghost',
+            onclick: function () {
+              hole.shotLog.splice(si, 1);
+              hole.shotLog.forEach(function (x, k) { x.n = k + 1; });
+              Shot.derive(hole); Store.save(); App.go('play/' + roundId + '/' + idx);
+            }
+          }, '×')
+        ]));
+      });
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '샷 기록 (' + hole.shotLog.length + '타)' }),
+        slBox,
+        U.el('div', { class: 'tiny mt8', text: '스코어·퍼팅·파온·페어웨이는 이 목록에서 자동 계산됩니다. 잘못 들어간 샷은 × 로 지우세요.' })
+      ]));
+    }
+
+    // --- 음성으로 남긴 원문 (예전 방식) ---
     if (hole.voiceLog && hole.voiceLog.length) {
       var vlogBox = U.el('div', { class: 'card' });
       hole.voiceLog.forEach(function (v, vi) {
