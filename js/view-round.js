@@ -649,6 +649,27 @@
 
     body.appendChild(U.el('div', { class: 'section' }, [U.el('h2', { text: '아이언샷 (그린 공략)' }), apBox]));
 
+    // --- 음성으로 남긴 원문 ---
+    if (hole.voiceLog && hole.voiceLog.length) {
+      var vlogBox = U.el('div', { class: 'card' });
+      hole.voiceLog.forEach(function (v, vi) {
+        vlogBox.appendChild(U.el('div', { class: 'vlog row between' }, [
+          U.el('span', { class: 'grow', text: '"' + v.text + '"' }),
+          U.el('button', {
+            class: 'sm ghost',
+            onclick: function () {
+              hole.voiceLog.splice(vi, 1); Store.save(); App.go('play/' + roundId + '/' + idx);
+            }
+          }, '×')
+        ]));
+      });
+      body.appendChild(U.el('div', { class: 'section' }, [
+        U.el('h2', { text: '음성으로 말한 내용' }),
+        vlogBox,
+        U.el('div', { class: 'tiny mt8', text: '잘못 알아들었어도 말한 문장은 그대로 남습니다. 위 항목을 직접 고친 뒤 이 기록은 지워도 됩니다.' })
+      ]));
+    }
+
     // --- 홀 메모 ---
     body.appendChild(U.el('div', { class: 'section' }, [
       U.el('h2', { text: '이 홀 한줄 기록' }),
@@ -673,10 +694,26 @@
       U.el('button', { class: 'ghost sm', onclick: function () { finish(round); } }, '라운드 종료')
     ]));
 
+    // --- 음성 입력 버튼 (화면 위에 떠 있는 마이크) ---
+    var fab = null;
+    if (Store.settings().voice !== false) {
+      fab = U.el('button', {
+        class: 'vfab' + (Voice.supported() ? '' : ' off'),
+        'aria-label': '음성으로 기록',
+        onclick: function () {
+          if (!Voice.supported()) {
+            U.toast('이 브라우저는 음성 인식을 지원하지 않습니다. 안드로이드 크롬에서 사용해 주세요.', 'err');
+            return;
+          }
+          VoiceUI.open(roundId, idx);
+        }
+      }, '🎤');
+    }
+
     return {
       title: round.courseName,
       sub: hole.nineName + ' ' + hole.holeNo + '번홀',
-      body: body, back: true, keepScroll: true
+      body: body, overlay: fab, back: true, keepScroll: true
     };
   };
 

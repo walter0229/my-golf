@@ -39,6 +39,23 @@
           return sel;
         })()
       ]),
+      U.el('div', { class: 'field' }, [
+        U.el('span', { style: 'display:block;font-size:13px;color:var(--fg2);margin-bottom:5px', text: '음성 입력 (홀 화면의 마이크 버튼)' }),
+        (function () {
+          var on = st.settings.voice !== false;
+          var seg = U.el('div', { class: 'seg' });
+          [[true, '사용'], [false, '숨김']].forEach(function (o) {
+            seg.appendChild(U.el('button', {
+              class: on === o[0] ? 'on' : '',
+              onclick: function () { Store.setSetting('voice', o[0]); App.render(); }
+            }, o[1]));
+          });
+          return seg;
+        })(),
+        U.el('div', { class: 'tiny mt8', text: Voice.supported()
+          ? '음성 인식은 인터넷 연결이 필요합니다. 신호가 없는 홀에서는 손으로 입력해 주세요.'
+          : '이 브라우저는 음성 인식을 지원하지 않습니다. 안드로이드 크롬에서 사용해 주세요.' })
+      ]),
       U.el('label', { class: 'field', style: 'margin-bottom:0' }, [
         U.el('span', { text: '목표 스코어 (홀별 목표 타수 계산에 사용)' }),
         U.el('input', {

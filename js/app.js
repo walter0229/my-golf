@@ -66,6 +66,7 @@
     wrap.appendChild(out.body);
     App.root.appendChild(wrap);
 
+    if (out.overlay) App.root.appendChild(out.overlay);
     App.root.appendChild(tabbar(r.name));
 
     if (sameView && prevScroll > 0) {

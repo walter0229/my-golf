@@ -41,6 +41,7 @@
         unit: 'y',            // 'm' | 'y'
         defaultTee: 'white',
         targetScore: 90,
+        voice: true,          // 홀 화면의 음성 입력 버튼 사용 여부
         gsheet: { clientId: '', spreadsheetId: '', autoSync: false, lastSync: null }
       },
       clubs: JSON.parse(JSON.stringify(DEFAULT_CLUBS)),
